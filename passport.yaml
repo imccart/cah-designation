@@ -1,0 +1,2311 @@
+# Numeric claim provenance for "Survival versus Scale: The Effects of Critical
+# Access Hospital Designation." Audited by /review-numbers.
+#
+# SCOPE. One entry per numeric quantity reported in the prose of paper/paper.tex
+# (including the abstract) and paper/appendix.tex. Confidence intervals ride along
+# in the `claim` string and are audited through their point estimate, since both
+# come from the same table row. Table and figure cells are not entered separately:
+# they are the artifacts, and checking a generated table against its own generator
+# is circular.
+#
+# Deliberately excluded, since none of them come out of the pipeline:
+#   - statutory and institutional facts (101 percent of costs, the 25-bed limit,
+#     96-hour average length of stay, 35 and 15 mile distance rules, 2006 and 2007
+#     rule changes, the 2023 REH designation)
+#   - estimation constants readable from the scripts (500 permutation draws,
+#     10,000 Monte Carlo draws, 150 bootstrap replications, winsorization at the
+#     5th and 95th percentiles, the 85 percent occupancy cap, constant 2010
+#     dollars, the 50-bed sample cutoff, pre- and post-period lengths)
+#
+# STATUS CONVENTIONS USED HERE.
+#   - A blank `artifact` marks a claim with no persisted source. The audit returns
+#     FAIL ("artifact missing") for these by design; the `explanation` names the
+#     script and the object that would have to be written out to close it.
+#   - EXPLAINED marks a number taken from a cited paper rather than from this
+#     pipeline. The `explanation` carries the citation.
+#   - `artifact_key` uses row/col on single-keyed CSVs and a regex elsewhere,
+#     including on CSVs whose rows need more than one field to identify.
+#
+# SECTIONS. Claims are grouped by document and each carries a `document` field
+# (paper or appendix). Ids are prefixed the same way: abstract-/sec* for
+# paper/paper.tex and app* for paper/appendix.tex.
+#
+# The response letter has its own passport at
+# paper/submissions/jpube/resubmission/passport.yaml. That folder is gitignored,
+# so numbers quoted only to the referees stay out of the public repo. Its paths
+# are written relative to the project root, like this file's.
+
+passport_version: 1
+paper: cah-designation
+
+claims:
+
+  ## ======================================================================
+  ## PAPER  (paper/paper.tex)
+  ## ======================================================================
+
+  - id: abstract-rollout-years
+    document: paper
+    claim: "the staggered 1999--2002 rollout of state-level CAH availability"
+    location: "Abstract; also Introduction ¶4, Section 2 ¶2, Section 4.5 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/adoption-timing-states.csv
+    artifact_key: "regex:,2002,"
+    expected_value:
+    tolerance:
+    status: STALE
+    explanation: "Cohort years in the file run 1994, 1995, 1998, 1999, 2000, 2001, 2002; the 1999-2002 window is the four cohorts carrying 37 of the 43 adopting states."
+    last_verified:
+
+  - id: abstract-margin-range
+    document: paper
+    claim: "raises operating margins by three to four percentage points"
+    location: "Abstract; Introduction ¶6; Introduction ¶9 (contribution 2)"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.033
+    tolerance: 0.002
+    status: STALE
+    explanation: "Lower end of the range. Upper end is the eligibility-restricted 0.037, entered as sec46-margin-elig."
+    last_verified:
+
+  - id: abstract-ed-percent
+    document: paper
+    claim: "Emergency department visits fall by roughly 17 percent"
+    location: "Abstract; Introduction ¶6; Section 4.3 ¶4; Section 5.2 ¶4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/visits-att.csv
+    artifact_key: "regex:^ED visits per bed,state,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.17
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation: "pct_of_pre_mean. Stored as a proportion; the prose reports it as a percent."
+    last_verified:
+
+  - id: sec2-cah-count-2021
+    document: paper
+    claim: "By 2021, more than 1,300 hospitals had obtained CAH status"
+    location: "Section 2 ¶1"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited Congressional Research Service report, crs2023, not from this pipeline."
+    last_verified:
+
+  - id: sec2-oig-two-thirds
+    document: paper
+    claim: "Nearly two-thirds of CAHs would not meet the location requirements if required to re-enroll"
+    location: "Section 2 ¶2, footnote"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "Quoted from the 2013 Office of the Inspector General report named in the footnote."
+    last_verified:
+
+  - id: sec2-cah-share-designations
+    document: paper
+    claim: "now accounts for over half of all such special designations"
+    location: "Section 2 ¶4"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From crs2023, not from this pipeline."
+    last_verified:
+
+  - id: sec2-beds-t-minus-5
+    document: paper
+    claim: "Mean beds decline from approximately 49 five years before designation"
+    location: "Section 2 ¶8 (Figure 5 panel a); repeated Section 4.4 ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,-5,([0-9.]+),"
+    expected_value: 49
+    tolerance: 0.5
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec2-beds-t-minus-1
+    document: paper
+    claim: "to 46 one year before"
+    location: "Section 2 ¶8; repeated Section 4.4 ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,-1,([0-9.]+),"
+    expected_value: 46
+    tolerance: 0.5
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec2-beds-t-zero
+    document: paper
+    claim: "then drop sharply to 42 at designation"
+    location: "Section 2 ¶8; repeated Section 4.4 ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,0,([0-9.]+),"
+    expected_value: 42
+    tolerance: 0.5
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec2-beds-t-plus-5
+    document: paper
+    claim: "and continue falling to 35 five years after"
+    location: "Section 2 ¶8; repeated Section 4.4 ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,5,([0-9.]+),"
+    expected_value: 35
+    tolerance: 0.5
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec2-beds-p25-at-limit
+    document: paper
+    claim: "The 25th percentile reaches the 25-bed statutory limit one year before designation and remains at 25 thereafter"
+    location: "Section 2 ¶8 (Figure 5 panel a)"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,-1,[^,]+,([0-9.]+),"
+    expected_value: 25
+    tolerance: 0.01
+    status: STALE
+    explanation: "p25_beds at event time -1, with the same column at event times 0 through 5 carrying the rest of the claim. The column is new, so it fills in when the script next runs; until then the audit reports a missing key rather than a missing source."
+    last_verified:
+
+  - id: sec2-ipdays-path
+    document: paper
+    claim: "a parallel decline in inpatient days per bed, from 159 to 123 over the same window"
+    location: "Section 2 ¶8 (Figure 5 panel b)"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converter-beds-eventtime.csv
+    artifact_key: "regex:^1999-2005,-5,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 159
+    tolerance: 1
+    status: STALE
+    explanation: "mean_ip_per_bed at event time -5; the 123 is the same column at event time 5. The column is new, so it fills in when the script next runs."
+    last_verified:
+
+  - id: sec33-unique-hospitals
+    document: paper
+    claim: "Our hospital-level dataset covers 6,911 unique hospitals observed at any point from 1980 to 2019"
+    location: "Section 3.3 ¶1"
+    script: analysis/1-sum-stats.R
+    artifact: results/diagnostics/hospital-counts-by-year.csv
+    artifact_key: "regex:^[0-9]+,[^,]+,[^,]+,([0-9]+),"
+    expected_value: 6911
+    tolerance:
+    status: UNVERIFIED
+    explanation: "panel_hospitals, constant across rows. The panel window is the panel_year_min and panel_year_max columns of the same file."
+    last_verified:
+
+  - id: sec33-states-1995
+    document: paper
+    claim: "5 states having at least one hospital with such a designation by 1995"
+    location: "Section 3.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/adoption-timing-states.csv
+    artifact_key: "regex:,(1995),"
+    expected_value:
+    tolerance:
+    status: STALE
+    explanation: "Three states carry cohort 1994 and two carry 1995, so five hold a designation by 1995. The five is a count of rows rather than a cell, so the key only locates the cohort column; verify by counting rows with cohort 1994 or 1995."
+    last_verified:
+
+  - id: sec33-states-1999
+    document: paper
+    claim: "19 states having at least one CAH in 1999"
+    location: "Section 3.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^States & [0-9]+ & ([0-9]+)"
+    expected_value: 19
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec33-states-2000
+    document: paper
+    claim: "another 8 states in 2000"
+    location: "Section 3.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^States(?: & [0-9]+){2} & ([0-9]+)"
+    expected_value: 8
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec33-states-2001
+    document: paper
+    claim: "another 8 states in 2001"
+    location: "Section 3.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^States(?: & [0-9]+){3} & ([0-9]+)"
+    expected_value: 8
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec33-states-2002
+    document: paper
+    claim: "and 2 additional states in 2002"
+    location: "Section 3.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^States(?: & [0-9]+){4} & ([0-9]+)"
+    expected_value: 2
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec33-cah-stock-2005
+    document: paper
+    claim: "the count of CAH-designated hospitals stabilizing around 1,250 hospitals by 2005"
+    location: "Section 3.3 ¶2 (Figure 6)"
+    script: analysis/1-sum-stats.R
+    artifact: results/diagnostics/hospital-counts-by-year.csv
+    artifact_key: "regex:^2005,1,([0-9]+),"
+    expected_value: 1250
+    tolerance: 5
+    status: UNVERIFIED
+    explanation: "Count of CAH-designated hospitals in 2005, which the prose rounds from 1,252. Distinct from the 1,240 converters in dollar-accounting.csv that Sections 4.5 and 5 quote, since that count is restricted to converting hospitals still observed in 2005."
+    last_verified:
+
+  - id: sec33-p90-beds-pre
+    document: paper
+    claim: "among hospitals receiving CAH designation, the 90th percentile in bed size in pre-CAH years was 107"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:22, ([0-9]+)"
+    expected_value: 107
+    tolerance:
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec33-p10-beds-noncah
+    document: paper
+    claim: "the 10th percentile of bed size for non-CAHs was 49"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:100. & ...([0-9]+), 449"
+    expected_value: 49
+    tolerance:
+    status: UNVERIFIED
+    explanation: "Bed-size percentile row of desc_compare.tex, Never CAH column."
+    last_verified:
+
+  - id: sec33-post-beds-mean
+    document: paper
+    claim: "after receiving CAH designation, the mean CAH bed size ... 41"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:^Bed size & [0-9.]+ & ([0-9.]+)"
+    expected_value: 41
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec33-post-ipdays-mean
+    document: paper
+    claim: "mean inpatient days per bed ... 136 [after designation]"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:^Inpatient days per bed & [0-9.]+ & ([0-9.]+)"
+    expected_value: 136
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec33-pre-beds-mean
+    document: paper
+    claim: "the mean bed size ... for CAHs before receiving designation were 55"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:^Bed size & ([0-9.]+)"
+    expected_value: 55
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec33-pre-ipdays-mean
+    document: paper
+    claim: "inpatient days per bed for CAHs before receiving designation ... 167"
+    location: "Section 3.3 ¶4"
+    script: analysis/1-sum-stats.R
+    artifact: results/desc_compare.tex
+    artifact_key: "regex:^Inpatient days per bed & ([0-9.]+)"
+    expected_value: 167
+    tolerance: 0.6
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-margin-sdid
+    document: paper
+    claim: "The pooled SDID ATT for operating margin is 0.033 (95% CI [0.01, 0.05])"
+    location: "Section 4.2 ¶3; Table 2, Operating margin, SDID"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.033
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-margin-premean
+    document: paper
+    claim: "an increase of 3.3 percentage points from a pre-designation mean of -0.12 among converting hospitals in the estimation sample"
+    location: "Section 4.2 ¶3"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/source-comparison.csv
+    artifact_key: "regex:^margin,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: -0.12
+    tolerance: 0.005
+    status: STALE
+    explanation: "pre_mean column. Distinct from the -0.07 in Table 1, which is the unrestricted pre-designation mean over all CAHs 1995-2010 rather than the estimation sample."
+    last_verified:
+
+  - id: sec42-margin-cs
+    document: paper
+    claim: "The CS estimate is similar at 0.041 (95% CI [0.03, 0.05])"
+    location: "Section 4.2 ¶3; Table 2, Operating margin, CS"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Operating margin(?: & [^&]+){3} & (-?[0-9.]+)"
+    expected_value: 0.041
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-netpatrev-dollars
+    document: paper
+    claim: "reductions of roughly $19,500 in net patient revenue ... per bed (in 2010 dollars)"
+    location: "Section 4.2 ¶4"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Net patient revenue per bed & (-?[0-9.]+)"
+    expected_value: -19.48
+    tolerance: 0.01
+    status: STALE
+    explanation: "Table reports thousands of 2010 dollars per bed; the prose converts to dollars."
+    last_verified:
+
+  - id: sec42-totopexp-dollars
+    document: paper
+    claim: "and $21,600 in operating expenses per bed (in 2010 dollars)"
+    location: "Section 4.2 ¶4"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Operating expenses per bed & (-?[0-9.]+)"
+    expected_value: -21.60
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-netpatrev-percent
+    document: paper
+    claim: "about 8 ... percent of their pre-designation means [net patient revenue]"
+    location: "Section 4.2 ¶4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/source-comparison.csv
+    artifact_key: "regex:^net_pat_rev,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.081
+    tolerance: 0.005
+    status: STALE
+    explanation: "pct_of_pre_mean column."
+    last_verified:
+
+  - id: sec42-totopexp-percent
+    document: paper
+    claim: "about ... 9 percent of their pre-designation means [operating expenses]"
+    location: "Section 4.2 ¶4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/source-comparison.csv
+    artifact_key: "regex:^tot_operating_exp,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.085
+    tolerance: 0.005
+    status: STALE
+    explanation: "pct_of_pre_mean column."
+    last_verified:
+
+  - id: sec42-preperiod-range-low
+    document: paper
+    claim: "Point estimates range from 0.033 to 0.040 as we vary the pre-period length from 2 to 5 years (low end)"
+    location: "Section 4.2 ¶5; Appendix C, pre-period paragraph ¶2"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^margin,Operating margin,3,(-?[0-9.]+)"
+    expected_value: 0.033
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-preperiod-range-high
+    document: paper
+    claim: "Point estimates range from 0.033 to 0.040 ... (high end)"
+    location: "Section 4.2 ¶5; Appendix C, pre-period paragraph ¶2"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^margin,Operating margin,2,(-?[0-9.]+)"
+    expected_value: 0.040
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-statecut-range-low
+    document: paper
+    claim: "remain between 0.020 and 0.041 as we vary the required lag in state-level CAH adoption ... (low end)"
+    location: "Section 4.2 ¶5"
+    script: analysis/app-statecut-sensitivity.R
+    artifact: results/diagnostics/statecut-sensitivity.csv
+    artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,2$"
+    expected_value: 0.020
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation: "Lag delta = 2 gives the lowest margin estimate across the robustness set."
+    last_verified:
+
+  - id: sec42-bedcut75-margin
+    document: paper
+    claim: "remain between 0.020 and 0.041 as we ... raise the bed-size cutoff to 75 beds (high end)"
+    location: "Section 4.2 ¶5"
+    script: analysis/app-bedcut-sensitivity.R
+    artifact: results/diagnostics/bedcut-sensitivity.csv
+    artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,75$"
+    expected_value: 0.041
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-bedcut25-margin
+    document: paper
+    claim: "A 25-bed cutoff gives a larger but imprecise estimate (0.115, 95% CI [-0.01, 0.23])"
+    location: "Section 4.2 ¶5"
+    script: analysis/app-bedcut-sensitivity.R
+    artifact: results/diagnostics/bedcut-sensitivity.csv
+    artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,25$"
+    expected_value: 0.115
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-margin-ife
+    document: paper
+    claim: "the IFE estimate is 0.026"
+    location: "Section 4.2 ¶5; Appendix D ¶4"
+    script: analysis/7-gsynth.R
+    artifact: results/att_gsynth.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.026
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec42-margin-perm-p
+    document: paper
+    claim: "A permutation test with 500 placebo reassignments of treatment gives a p-value of 0.006"
+    location: "Section 4.2 ¶5; Table 2, Operating margin, Permutation p"
+    script: analysis/app-permutation.R
+    artifact: results/diagnostics/permutation_pvalues.csv
+    artifact_key: "row=Operating margin,col=p_value"
+    expected_value: 0.006
+    tolerance: 0.0005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-currentratio-sdid
+    document: paper
+    claim: "For the current ratio, the SDID pooled ATT is -0.239 (95% CI [-0.54, 0.06])"
+    location: "Section 4.2 ¶6; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Current ratio & (-?[0-9.]+)"
+    expected_value: -0.239
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-currentratio-cs
+    document: paper
+    claim: "and the CS estimate is 0.116 (95% CI [-0.04, 0.27])"
+    location: "Section 4.2 ¶6; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Current ratio(?: & [^&]+){3} & (-?[0-9.]+)"
+    expected_value: 0.116
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec42-currentratio-percent
+    document: paper
+    claim: "a decline of about 9 percent of the pre-designation ratio"
+    location: "Section 4.2 ¶6"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/source-comparison.csv
+    artifact_key: "regex:^current_ratio,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.092
+    tolerance: 0.005
+    status: STALE
+    explanation: "pct_of_pre_mean column. The companion 'an increase of about 4 percent' is the CS ATT over the same pre_mean (2.60) and is not itself persisted."
+    last_verified:
+
+  - id: sec42-currentratio-ife
+    document: paper
+    claim: "The IFE estimator yields an estimated effect of -0.094 (95% CI [-0.22, 0.03])"
+    location: "Section 4.2 ¶6"
+    script: analysis/7-gsynth.R
+    artifact: results/att_gsynth.tex
+    artifact_key: "regex:^Current ratio & (-?[0-9.]+)"
+    expected_value: -0.094
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec43-netfixed-sdid
+    document: paper
+    claim: "a pooled ATT for net fixed assets per bed of 0.004 (95% CI [-0.02, 0.03])"
+    location: "Section 4.2 (Capital Stock and Investment) ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Net fixed assets & (-?[0-9.]+)"
+    expected_value: 0.004
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec43-capex-sdid
+    document: paper
+    claim: "Estimated effects on capital expenditures are positive but imprecise (ATT = 0.976, 95% CI [-0.38, 2.33])"
+    location: "Section 4.2 (Capital Stock and Investment) ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Capital expenditures per bed & (-?[0-9.]+)"
+    expected_value: 0.976
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-beds-sdid
+    document: paper
+    claim: "a pooled ATT of -4.081 beds (95% CI [-7.70, -0.46])"
+    location: "Section 4.3 ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Total beds & (-?[0-9.]+)"
+    expected_value: -4.081
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-obbeds-sdid
+    document: paper
+    claim: "OB beds falling by 0.468 (95% CI [-0.81, -0.12])"
+    location: "Section 4.3 ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^OB beds & (-?[0-9.]+)"
+    expected_value: -0.468
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-ftern-sdid
+    document: paper
+    claim: "FTE registered nurses falling by 2.023 (95% CI [-3.44, -0.61])"
+    location: "Section 4.3 ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^FTE RNs & (-?[0-9.]+)"
+    expected_value: -2.023
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-beds-cohort-1999
+    document: paper
+    claim: "from -0.3 beds for the 1999 cohort"
+    location: "Section 4.3 ¶1"
+    script: analysis/2-hospital-dd.R
+    artifact: results/att_cohort.tex
+    artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 50 "
+    expected_value: -0.257
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation: "Anchored on the 1999 cohort N_tr of 50, since att_cohort.tex repeats the Total beds label once per cohort."
+    last_verified:
+
+  - id: sec44-beds-cohort-2000
+    document: paper
+    claim: "to -3.0 for 2000"
+    location: "Section 4.3 ¶1"
+    script: analysis/2-hospital-dd.R
+    artifact: results/att_cohort.tex
+    artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 133 "
+    expected_value: -3.048
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation: "Anchored on the 2000 cohort N_tr of 133."
+    last_verified:
+
+  - id: sec44-beds-cohort-2001
+    document: paper
+    claim: "and -6.5 for 2001"
+    location: "Section 4.3 ¶1"
+    script: analysis/2-hospital-dd.R
+    artifact: results/att_cohort.tex
+    artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 136 "
+    expected_value: -6.50
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation: "Anchored on the 2001 cohort N_tr of 136."
+    last_verified:
+
+  - id: sec44-ipdays-sdid
+    document: paper
+    claim: "Inpatient days per bed also decline following designation (ATT = -6.7, 95% CI [-18.5, 5.2])"
+    location: "Section 4.3 ¶1; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Inpatient days per bed & (-?[0-9.]+)"
+    expected_value: -6.66
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-ipdays-elig
+    document: paper
+    claim: "larger and precisely estimated in the eligibility-restricted design (-17.6, 95% CI [-21.2, -14.0])"
+    location: "Section 4.3 ¶1"
+    script: analysis/3-hospital-dd-alt.R
+    artifact: results/att_elig_overall.tex
+    artifact_key: "regex:^Inpatient days per bed & (-?[0-9.]+)"
+    expected_value: -17.60
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-before
+    document: paper
+    claim: "The share of hospitals at exactly 25 beds rises from 1.8 percent"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.adopting states, before.,[0-9]+,([0-9.]+),"
+    expected_value: 0.018
+    tolerance: 0.002
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-after
+    document: paper
+    claim: "to 16.6 percent"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.adopting states, after.,[0-9]+,([0-9.]+),"
+    expected_value: 0.166
+    tolerance: 0.002
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-notyet-low
+    document: paper
+    claim: "States that had not yet adopted show no such mass in the same years (1.0 ... percent of hospital-years at 25 beds)"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.1999, Not yet adopted.,[0-9]+,([0-9.]+),"
+    expected_value: 0.010
+    tolerance: 0.002
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-notyet-high
+    document: paper
+    claim: "(... to 1.8 percent of hospital-years at 25 beds)"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.2000, Not yet adopted.,[0-9]+,([0-9.]+),"
+    expected_value: 0.018
+    tolerance: 0.002
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-converters
+    document: paper
+    claim: "28 percent of which are at exactly 25 beds after adoption"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.adopting states, after: eventual converters.,[0-9]+,([0-9.]+),"
+    expected_value: 0.281
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-notch-neverconverters
+    document: paper
+    claim: "against 1 percent of never-converters"
+    location: "Section 4.3 ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bed-notch-shares.csv
+    artifact_key: "regex:^.adopting states, after: never-converters.,[0-9]+,([0-9.]+),"
+    expected_value: 0.010
+    tolerance: 0.003
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec44-opvisits-sdid
+    document: paper
+    claim: "Outpatient visits per bed are essentially unchanged, with an SDID ATT of 1.21 (95% CI [-57.9, 60.3])"
+    location: "Section 4.3 ¶3; Table 4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/visits-att.csv
+    artifact_key: "regex:^Outpatient visits per bed,state,(-?[0-9.]+),"
+    expected_value: 1.208
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec44-edvisits-sdid
+    document: paper
+    claim: "Emergency department visits per bed fall by 18.08 (95% CI [-27.4, -8.7])"
+    location: "Section 4.3 ¶3; Table 4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/visits-att.csv
+    artifact_key: "regex:^ED visits per bed,state,(-?[0-9.]+),"
+    expected_value: -18.08
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec44-ed-premean
+    document: paper
+    claim: "roughly 17 percent of the pre-designation mean of 104 emergency visits per bed among converting hospitals"
+    location: "Section 4.3 ¶3"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/visits-att.csv
+    artifact_key: "regex:^ED visits per bed,state,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 104
+    tolerance: 1
+    status: UNVERIFIED
+    explanation: "pre_mean."
+    last_verified:
+
+  - id: sec44-births-sdid
+    document: paper
+    claim: "Births fall by about 10 per year (95% CI [-20.8, -0.2])"
+    location: "Section 4.3 ¶3; Table 4"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/visits-att.csv
+    artifact_key: "regex:^Births,state,(-?[0-9.]+),"
+    expected_value: -10.48
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec45-margin-path
+    document: paper
+    claim: "converting hospitals' operating margins decline in the two years before designation, from about -0.10 to -0.15 in the state-timing sample"
+    location: "Section 4.4 ¶2"
+    script: analysis/2-hospital-dd.R
+    artifact: results/diagnostics/sdid-event-paths.csv
+    artifact_key: "regex:^Operating margin,-1,(-?[0-9.]+),"
+    expected_value: -0.15
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation: "Treated path at event time -1. The about -0.10 end of the claim is the same column at event time -3, which reads -0.094."
+    last_verified:
+
+  - id: sec45-antic-ftern
+    document: paper
+    claim: "The estimated reduction in FTE RNs rises from -2.0 to -3.2"
+    location: "Section 4.4 ¶4; Table 3"
+    script: analysis/R1_revision.R
+    artifact: results/att_antic_state.tex
+    artifact_key: "regex:^FTE RNs(?: & [^&]+){2} & (-?[0-9.]+)"
+    expected_value: -3.247
+    tolerance: 0.05
+    status: STALE
+    explanation: "Treatment-one-year-earlier column."
+    last_verified:
+
+  - id: sec45-antic-ipdays
+    document: paper
+    claim: "and in inpatient days per bed from -6.7 to -9.7"
+    location: "Section 4.4 ¶4; Table 3"
+    script: analysis/R1_revision.R
+    artifact: results/att_antic_state.tex
+    artifact_key: "regex:^Inpatient days per bed(?: & [^&]+){2} & (-?[0-9.]+)"
+    expected_value: -9.72
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec45-antic-beds
+    document: paper
+    claim: "the total bed effect falls from -4.1 to -2.6"
+    location: "Section 4.4 ¶4; Table 3"
+    script: analysis/R1_revision.R
+    artifact: results/att_antic_state.tex
+    artifact_key: "regex:^Total beds(?: & [^&]+){2} & (-?[0-9.]+)"
+    expected_value: -2.586
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec45-antic-margin-base
+    document: paper
+    claim: "The margin estimate roughly halves under the earlier dating (from 0.037 ...)"
+    location: "Section 4.4 ¶4; Appendix H ¶1"
+    script: analysis/3-hospital-dd-alt.R
+    artifact: results/att_elig_overall.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.037
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec45-antic-margin-shifted
+    document: paper
+    claim: "The margin estimate roughly halves under the earlier dating (... to 0.018 in the eligibility-restricted design)"
+    location: "Section 4.4 ¶4; Appendix H ¶1"
+    script: analysis/app-anticipation.R
+    artifact: results/diagnostics/anticipation-comparison.csv
+    artifact_key: "regex:^Operating margin,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: 0.018
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation: "Anticipation (one-year-earlier) ATT column of the eligibility-restricted comparison."
+    last_verified:
+
+  - id: sec46-closures-sdid
+    document: paper
+    claim: "a decline of 0.483 closures per 100 hospitals (95% CI [-0.83, -0.13])"
+    location: "Section 4.5 ¶4; Table 2; Section 5.1 ¶3"
+    script: analysis/4-changes-state-dd.R
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Closures & (-?[0-9.]+)"
+    expected_value: -0.483
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec46-closures-perm-p
+    document: paper
+    claim: "permutation inference ... gives a p-value of 0.008 for closures"
+    location: "Section 4.5 ¶4, footnote; Table 2"
+    script: analysis/app-permutation.R
+    artifact: results/diagnostics/permutation_pvalues.csv
+    artifact_key: "row=Closures,col=p_value"
+    expected_value: 0.008
+    tolerance: 0.0005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-mergers-sdid
+    document: paper
+    claim: "the SDID estimate for mergers is 0.111 per 100 hospitals (95% CI [-0.19, 0.41])"
+    location: "Section 4.5 ¶5; Table 2"
+    script: analysis/4-changes-state-dd.R
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Mergers & (-?[0-9.]+)"
+    expected_value: 0.111
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec46-system-sdid
+    document: paper
+    claim: "a modest increase in system membership (0.074, 95% CI [0.01, 0.14])"
+    location: "Section 4.5 ¶5; Table 2"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^System membership & (-?[0-9.]+)"
+    expected_value: 0.074
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-closures-cs
+    document: paper
+    claim: "The CS estimate for closures is -0.278 (95% CI [-0.65, 0.09])"
+    location: "Section 4.5 ¶5, footnote; Table 2"
+    script: analysis/4-changes-state-dd.R
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Closures(?: & [^&]+){3} & (-?[0-9.]+)"
+    expected_value: -0.278
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec46-control-states-2000
+    document: paper
+    claim: "the not-yet-treated pool falls to 13 states in 2000"
+    location: "Section 4.5 ¶5, footnote; Appendix B ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/closure-cohort-cs-sdid.csv
+    artifact_key: "regex:^2000,[0-9]+,([0-9]+),"
+    expected_value: 13
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-control-states-2001
+    document: paper
+    claim: "and five in 2001"
+    location: "Section 4.5 ¶5, footnote; Appendix B ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/closure-cohort-cs-sdid.csv
+    artifact_key: "regex:^2001,[0-9]+,([0-9]+),"
+    expected_value: 5
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-control-states-1999
+    document: paper
+    claim: "In the 1999 cohort, which has 21 control states"
+    location: "Section 4.5 ¶5, footnote; Appendix B ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/closure-cohort-cs-sdid.csv
+    artifact_key: "regex:^1999,[0-9]+,([0-9]+),"
+    expected_value: 21
+    tolerance:
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-closures-prevented
+    document: paper
+    claim: "implies roughly 21 closures prevented"
+    location: "Section 4.5 ¶6; Section 5 ¶1; Section 5.1 ¶4 and ¶8"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=closures_prevented"
+    expected_value: 21.1
+    tolerance: 0.2
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec46-hospitals-cah-states
+    document: paper
+    claim: "across the approximately 4,400 hospitals in states that adopted the program"
+    location: "Section 4.5 ¶6; Section 5.1 ¶4"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=n_hosp_cah_states"
+    expected_value: 4400
+    tolerance: 50
+    status: UNVERIFIED
+    explanation: "The prose rounds; the computed value is about 4,367. The column is new, so it fills in when the script next runs."
+    last_verified:
+
+  - id: sec46-converters-count
+    document: paper
+    claim: "the roughly 1,240 hospitals that had converted to CAH status by 2005"
+    location: "Section 4.5 ¶6; Section 5 ¶1; Section 5.1 ¶4 and ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,([0-9]+),"
+    expected_value: 1240
+    tolerance: 1
+    status: STALE
+    explanation: "Also appears as n_cah in results/diagnostics/next-nearest-distance.csv."
+    last_verified:
+
+  - id: sec46-per-converter-closure
+    document: paper
+    claim: "a per-converter reduction in closure probability of about 1.7%"
+    location: "Section 4.5 ¶6"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=closure_prob_per_converter"
+    expected_value: 0.017
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation: "Stored as a proportion; the prose reports it as a percent. The column is new, so it fills in when the script next runs."
+    last_verified:
+
+  - id: sec46-carroll-comparison
+    document: paper
+    claim: "comparable to the 1.9% implied by Carroll (2025)"
+    location: "Section 4.5 ¶6; Introduction ¶8 ('reduces closure rates by roughly 20%')"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited paper, carroll2025, not from this pipeline."
+    last_verified:
+
+  - id: sec46elig-control-count
+    document: paper
+    claim: "drawing on a control pool of 1,138 non-CAH small hospitals"
+    location: "Section 4.6 ¶2"
+    script: analysis/3-hospital-dd-alt.R
+    artifact: results/diagnostics/elig-control-pool.csv
+    artifact_key: "regex:^NA,([0-9]+)"
+    expected_value: 1138
+    tolerance: 1
+    status: UNVERIFIED
+    explanation: "Distinct control hospitals across cohorts, before outcome-specific balancing. Per-cohort counts run 797 in 2005 to 1,000 in 1999 and are in the same file. Replaced an unsourced 989 that dated to commit 527ae38 on 2026-02-14."
+    last_verified:
+
+  - id: sec46elig-margin-state
+    document: paper
+    claim: "The operating margin effect is 0.033 in the state-timing design"
+    location: "Section 4.6 ¶3"
+    script: analysis/_run-analysis.r
+    artifact: results/att_overall_perm.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.033
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec46-margin-elig
+    document: paper
+    claim: "and 0.037 in the eligibility-restricted design"
+    location: "Section 4.6 ¶3; Abstract and Introduction ('three to four percentage points')"
+    script: analysis/3-hospital-dd-alt.R
+    artifact: results/att_elig_overall.tex
+    artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
+    expected_value: 0.037
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec47-n-comparisons
+    document: paper
+    claim: "the figure involves 43 subgroup comparisons"
+    location: "Section 4.7 ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/het-multipletest.csv
+    artifact_key: "regex:^Pre-treatment margin,OB beds,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9]+),"
+    expected_value: 43
+    tolerance:
+    status: STALE
+    explanation: "tests column, constant across rows."
+    last_verified:
+
+  - id: sec47-obbeds-nonprofit
+    document: paper
+    claim: "Private nonprofit hospitals reduce OB beds ... -0.92"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Ownership,Nonprofit,OB beds,(-?[0-9.]+),"
+    expected_value: -0.92
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-obbeds-government
+    document: paper
+    claim: "... versus -0.39 OB beds [government]"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Ownership,Government,OB beds,(-?[0-9.]+),"
+    expected_value: -0.39
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-totopexp-nonprofit
+    document: paper
+    claim: "-40 ... thousand dollars per bed [nonprofit operating expenses]"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Ownership,Nonprofit,Operating expenses per bed,(-?[0-9.]+),"
+    expected_value: -40
+    tolerance: 0.5
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-totopexp-government
+    document: paper
+    claim: "... versus -8 thousand dollars per bed [government operating expenses]"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Ownership,Government,Operating expenses per bed,(-?[0-9.]+),"
+    expected_value: -8
+    tolerance: 0.3
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-obbeds-margin-above
+    document: paper
+    claim: "Hospitals with above-median pre-treatment margins also reduce OB beds by more ... -0.94"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Pre-treatment margin,Above median,OB beds,(-?[0-9.]+),"
+    expected_value: -0.94
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-obbeds-margin-below
+    document: paper
+    claim: "... versus -0.37 [below-median pre-treatment margin]"
+    location: "Section 4.7 ¶2"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Pre-treatment margin,Below median,OB beds,(-?[0-9.]+),"
+    expected_value: -0.37
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-system-proximate
+    document: paper
+    claim: "Proximate hospitals show a significant increase in system membership post-CAH (ATT = 0.076, p < 0.05)"
+    location: "Section 4.7 ¶3"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Geographic isolation,Proximate,System membership,(-?[0-9.]+),"
+    expected_value: 0.076
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-margin-range-low
+    document: paper
+    claim: "The margin effect is positive and of similar size in every subgroup, between 0.025 and 0.046 (low end)"
+    location: "Section 4.7 ¶3"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^Pre-treatment margin,Below median,Operating margin,(-?[0-9.]+),"
+    expected_value: 0.025
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec47-margin-range-high
+    document: paper
+    claim: "The margin effect is positive and of similar size in every subgroup, between 0.025 and 0.046 (high end)"
+    location: "Section 4.7 ¶3"
+    script: analysis/6-heterogeneity.R
+    artifact: results/het_results.csv
+    artifact_key: "regex:^System membership,Independent,Operating margin,(-?[0-9.]+),"
+    expected_value: 0.046
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-delta-b
+    document: paper
+    claim: "our pooled SDID estimates give ... Delta B = -4.081 beds per converting hospital"
+    location: "Section 5.1 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=delta_B"
+    expected_value: -4.081
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-delta-c
+    document: paper
+    claim: "our pooled SDID estimates give Delta C = -0.483 closures per 100 hospitals"
+    location: "Section 5.1 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=delta_C"
+    expected_value: -0.483
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-rho-eligible
+    document: paper
+    claim: "Among hospitals with 50 or fewer beds, the observed conversion rate is substantially higher (approximately 69%)"
+    location: "Section 5.1 ¶3, footnote"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=rho_obs"
+    expected_value: 0.69
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-b-close
+    document: paper
+    claim: "we use the mean pre-CAH bed size from Table 1, B_close ~ 55"
+    location: "Section 5.1 ¶3; Table 5 baseline row"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=B_close"
+    expected_value: 55
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-net-beds-baseline
+    document: paper
+    claim: "0.266 - 1.224 = -0.958 ... a net reduction of approximately one bed per hospital"
+    location: "Section 5.1 ¶3"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^Mean converter before designation .baseline.,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.958
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-rho-star-beds
+    document: paper
+    claim: "rho* ~ 0.065, or about 7% of hospitals"
+    location: "Section 5.1 ¶4; Section 6 ¶5"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=rho_star_beds"
+    expected_value: 0.065
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-rho-star-ipd
+    document: paper
+    claim: "An analogous calculation using inpatient days yields a break-even of approximately 14%"
+    location: "Section 5.1 ¶4; Section 6 ¶5"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=rho_star_ipd"
+    expected_value: 0.140
+    tolerance: 0.002
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-closer-mean-beds
+    document: paper
+    claim: "Hospitals with 50 or fewer beds that closed over 1995--2010 averaged 39 beds"
+    location: "Section 5.1 ¶5; Section 5.1 ¶7; Table 5"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/closer-bedsize.csv
+    artifact_key: "row=0,col=mean"
+    expected_value: 39
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-closer-n
+    document: paper
+    claim: "the 79 hospitals with 50 or fewer beds that closed over 1995--2010"
+    location: "Section 5.1 ¶7"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/closer-bedsize.csv
+    artifact_key: "row=0,col=n"
+    expected_value: 79
+    tolerance:
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-breakeven-closers
+    document: paper
+    claim: "which gives a break-even share of 4.6 percent"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^.Closers with 50 or fewer beds, mean.,[^,]+,([0-9.]+),"
+    expected_value: 0.046
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-breakeven-rural
+    document: paper
+    claim: "rural closers averaged 47 beds, which gives 5.6 percent"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^.Rural closers, mean.,[^,]+,([0-9.]+),"
+    expected_value: 0.056
+    tolerance: 0.001
+    status: STALE
+    explanation: "The 47-bed figure is the B column of the same row."
+    last_verified:
+
+  - id: sec51-breakeven-p25
+    document: paper
+    claim: "with 27 ... beds (the 25th ... percentile among small hospitals), the break-even share falls to 3.2 ... percent"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^Smallest hospitals: 25th percentile of small hospitals,[^,]+,([0-9.]+),"
+    expected_value: 0.032
+    tolerance: 0.001
+    status: STALE
+    explanation: "The 27-bed figure is the B column of the same row, the 25th percentile of beds among all hospitals with 50 or fewer beds. It is not the 25th percentile among closers, which closer-bedsize.csv puts at 36."
+    last_verified:
+
+  - id: sec51-breakeven-p10
+    document: paper
+    claim: "with ... 20 beds (the ... 10th percentile among small hospitals), the break-even share falls to ... 2.4 percent"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^Smallest hospitals: 10th percentile of small hospitals,[^,]+,([0-9.]+),"
+    expected_value: 0.024
+    tolerance: 0.001
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-net-beds-range-low
+    document: paper
+    claim: "the net change in beds per hospital at the observed 30 percent conversion share is between -0.96 and -1.13 (low end)"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^Mean converter before designation .baseline.,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -0.96
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-net-beds-range-high
+    document: paper
+    claim: "the net change in beds per hospital ... between -0.96 and -1.13 (high end)"
+    location: "Section 5.1 ¶5; Table 5"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/breakeven-sensitivity.csv
+    artifact_key: "regex:^Smallest hospitals: 10th percentile of small hospitals,[^,]+,[^,]+,(-?[0-9.]+)"
+    expected_value: -1.13
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-psa-median
+    document: paper
+    claim: "The median is approximately -0.96 beds per hospital"
+    location: "Section 5.1 ¶6 (Figure psa-beds)"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/psa_summary.csv
+    artifact_key: "row=Net beds/hospital,col=median"
+    expected_value: -0.96
+    tolerance: 0.005
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-psa-prob-positive
+    document: paper
+    claim: "only about 4% of draws yield a positive net effect"
+    location: "Section 5.1 ¶6"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/psa_summary.csv
+    artifact_key: "row=Net beds/hospital,col=prob_positive"
+    expected_value: 0.036
+    tolerance: 0.005
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec51-gowrisankaran-welfare
+    document: paper
+    claim: "consumer welfare improves only if CAH designation prevents closure of at least 6.5% of converting hospitals"
+    location: "Section 5.1 ¶6, footnote; Introduction ¶8"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited paper, gowrisankaran2018, not from this pipeline."
+    last_verified:
+
+  - id: sec51-margin-gain-range
+    document: paper
+    claim: "A margin gain of 3.3 to 3.7 percentage points"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,([0-9.]+),"
+    expected_value: 0.033
+    tolerance: 0.001
+    status: STALE
+    explanation: "Low end. The 3.7 is the Eligibility-restricted row of the same column, audited as sec46-margin-elig."
+    last_verified:
+
+  - id: sec51-mean-revenue
+    document: paper
+    claim: "mean pre-designation net patient revenue of about $11 million (in 2010 dollars)"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,[^,]+,([0-9.]+),"
+    expected_value: 11364
+    tolerance: 20
+    status: STALE
+    explanation: "Stored in thousands of 2010 dollars; the prose rounds to $11 million."
+    last_verified:
+
+  - id: sec51-gain-per-hospital
+    document: paper
+    claim: "roughly $0.4 million of added net income per converting hospital per year"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 374
+    tolerance: 5
+    status: STALE
+    explanation: "Stored in thousands of 2010 dollars."
+    last_verified:
+
+  - id: sec51-aggregate-billion
+    document: paper
+    claim: "or about $0.5 billion per year across the roughly 1,240 converters"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 0.463
+    tolerance: 0.01
+    status: STALE
+    explanation: "State-timing gives 0.46 and the eligibility-restricted design 0.52; the prose reports about 0.5."
+    last_verified:
+
+  - id: sec51-gain-per-closure-low
+    document: paper
+    claim: "on the order of $22 to $24 million of added net income per year for each hospital kept open (low end)"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
+    expected_value: 21.96
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec51-gain-per-closure-high
+    document: paper
+    claim: "on the order of $22 to $24 million ... (high end)"
+    location: "Section 5.1 ¶8"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/dollar-accounting.csv
+    artifact_key: "regex:^Eligibility-restricted,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
+    expected_value: 24.45
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: sec52-gujral-mortality
+    document: paper
+    claim: "rural hospital closures increase inpatient mortality for time-sensitive conditions by 0.78 percentage points"
+    location: "Section 5.2 ¶2"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited paper, gujral2019, not from this pipeline. It enters 8-access-health.R as the 0.0078 calibration constant behind lives_saved_closure."
+    last_verified:
+
+  - id: sec52-admissions-per-cah
+    document: paper
+    claim: "approximately 1,000 admissions per year at each"
+    location: "Section 5.2 ¶2"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=avg_adm_cah"
+    expected_value: 1027
+    tolerance: 5
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-lives-saved
+    document: paper
+    claim: "the implied benefit is about 170 lives saved annually"
+    location: "Section 5.2 ¶2"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=lives_saved_closure"
+    expected_value: 169
+    tolerance: 1
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-lives-range
+    document: paper
+    claim: "or 50 to 290 lives based on our 95% confidence interval of 6 to 36 closures averted"
+    location: "Section 5.2 ¶2"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=lives_saved_lo"
+    expected_value: 50
+    tolerance: 5
+    status: UNVERIFIED
+    explanation: "Lower bound. The 290 is lives_saved_hi, and the 6 to 37 closures are closures_prevented_lo and closures_prevented_hi in the same row. The columns are new, so they fill in when the script next runs."
+    last_verified:
+
+  - id: sec52-ipdays-point
+    document: paper
+    claim: "approximately 6.7 fewer inpatient days per bed at converting hospitals"
+    location: "Section 5.2 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/capacity-accounting.csv
+    artifact_key: "row=0,col=delta_IPD"
+    expected_value: -6.66
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-nextnearest-median
+    document: paper
+    claim: "the next-nearest hospital is a median of approximately 18 miles away"
+    location: "Section 5.2 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/next-nearest-distance.csv
+    artifact_key: "row=0,col=median_cah"
+    expected_value: 17.5
+    tolerance: 0.1
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-nextnearest-p25
+    document: paper
+    claim: "with an interquartile range of 12 ... miles"
+    location: "Section 5.2 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/next-nearest-distance.csv
+    artifact_key: "row=0,col=p25_cah"
+    expected_value: 12.2
+    tolerance: 0.1
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-nextnearest-p75
+    document: paper
+    claim: "with an interquartile range of ... to 24 miles"
+    location: "Section 5.2 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/next-nearest-distance.csv
+    artifact_key: "row=0,col=p75_cah"
+    expected_value: 23.7
+    tolerance: 0.1
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-median-all-hospitals
+    document: paper
+    claim: "much farther than the overall hospital median of 12 miles"
+    location: "Section 5.2 ¶3"
+    script: analysis/8-access-health.R
+    artifact: results/diagnostics/next-nearest-distance.csv
+    artifact_key: "row=0,col=median_all"
+    expected_value: 11.6
+    tolerance: 0.1
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: sec52-gowrisankaran-admissions
+    document: paper
+    claim: "CAH conversion reduces admissions by approximately 5%, with AMI admissions declining by 8% and injury-related admissions by 12%"
+    location: "Section 5.2 ¶5; Introduction ¶8"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited paper, gowrisankaran2018, not from this pipeline."
+    last_verified:
+
+  - id: sec52-kozhimannil-preterm
+    document: paper
+    claim: "loss of rural obstetric services increases preterm births by 0.67 percentage points"
+    location: "Section 5.2 ¶5"
+    script:
+    artifact:
+    artifact_key:
+    expected_value:
+    tolerance:
+    status: EXPLAINED
+    explanation: "From the cited paper, kozhimannil2018, not from this pipeline."
+    last_verified:
+
+  - id: sec44-beds-percent
+    document: paper
+    claim: "roughly 11 percent of the pre-designation mean of 36 beds among converting hospitals in the estimation sample"
+    location: "Section 4.3 (Capacity and Staffing), first paragraph"
+    script: analysis/2-hospital-dd.R
+    artifact: results/diagnostics/sdid-event-paths.csv
+    artifact_key: "regex:^Total beds,-1,(-?[0-9.]+),"
+    expected_value: 34.2
+    tolerance: 0.1
+    status: UNVERIFIED
+    explanation: "Keyed to the treated path at event time -1. The base is the mean of the treated path over event times -5 to -1, 35.6 beds, and -4.081 / 35.6 = 0.115. Added so the 'similar size to the decline in beds' comparison in Section 4.2 has a base the reader can check."
+    last_verified:
+
+  ## ======================================================================
+  ## APPENDIX  (paper/appendix.tex)
+  ## ======================================================================
+
+  - id: appA-coverage-new
+    document: appendix
+    claim: "Of converters' pre-designation hospital-years from 1996 onward, 86 percent have a cost report"
+    location: "Appendix A, Data Sources ¶2"
+    script: data-code/build-hcris-financial.R
+    artifact: data/output/hcris_crosswalk_coverage.csv
+    artifact_key: "row=0,col=share_new_link"
+    expected_value: 0.86
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation: "share_new_link, 0.859 over 10,044 hospital-years for 1,412 converters. Replaced an 87 that predated the coverage file; the response letter quotes the same figure."
+    last_verified:
+
+  - id: appA-coverage-old
+    document: appendix
+    claim: "compared with 15 percent under a time-invariant crosswalk"
+    location: "Appendix A, Data Sources ¶2"
+    script: data-code/build-hcris-financial.R
+    artifact: data/output/hcris_crosswalk_coverage.csv
+    artifact_key: "row=0,col=share_old_link"
+    expected_value: 0.15
+    tolerance: 0.01
+    status: UNVERIFIED
+    explanation: "share_old_link, 0.145."
+    last_verified:
+
+  - id: appB-max-weight
+    document: appendix
+    claim: "the largest weight on any control is at most 0.06"
+    location: "Appendix B ¶2"
+    script: analysis/app-dd-diagnostics.R
+    artifact: results/diagnostics/diag-weight-results.csv
+    artifact_key: "regex:^system,2001,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 0.062
+    tolerance: 0.002
+    status: UNVERIFIED
+    explanation: "Maximum of max_weight across all hospital-level rows. The key points at the row holding that maximum; if the maximum moves to another row the audit will read the wrong cell, so recheck the maximum when the diagnostics are regenerated."
+    last_verified:
+
+  - id: appB-top5-share
+    document: appendix
+    claim: "the five largest controls never carry more than 27 percent of the weight"
+    location: "Appendix B ¶2"
+    script: analysis/app-dd-diagnostics.R
+    artifact: results/diagnostics/diag-weight-results.csv
+    artifact_key: "regex:^system,2001,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 0.271
+    tolerance: 0.005
+    status: UNVERIFIED
+    explanation: "Maximum of top5_weight_share across hospital-level rows; same caveat as appB-max-weight."
+    last_verified:
+
+  - id: appB-state-controls-low
+    document: appendix
+    claim: "The state-level outcomes have far fewer controls, 5 ... states depending on the cohort"
+    location: "Appendix B ¶2"
+    script: analysis/app-dd-diagnostics.R
+    artifact: results/diagnostics/diag-weight-results.csv
+    artifact_key: "regex:^closures,2001,([0-9]+),"
+    expected_value: 5
+    tolerance:
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appB-state-controls-high
+    document: appendix
+    claim: "The state-level outcomes have far fewer controls, ... to 21 states depending on the cohort"
+    location: "Appendix B ¶2"
+    script: analysis/app-dd-diagnostics.R
+    artifact: results/diagnostics/diag-weight-results.csv
+    artifact_key: "regex:^closures,1999,([0-9]+),"
+    expected_value: 21
+    tolerance:
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-immediate-adopters
+    document: appendix
+    claim: "Of the 1,466 hospitals with a designation date anywhere in our panel, 121 (8.3%) converted in their state's first year of CAH availability"
+    location: "Appendix C, Excluding immediate adopters ¶1"
+    script: analysis/app-control-timing.R
+    artifact: results/diagnostics/control-timing-counts.csv
+    artifact_key: "row=0,col=n_immediate"
+    expected_value: 121
+    tolerance:
+    status: UNVERIFIED
+    explanation: "The 1,466 and the 8.3 percent are n_treated_total and share_immediate in the same row."
+    last_verified:
+
+  - id: appC-never-treated-small
+    document: appendix
+    claim: "only 10 hospitals in these states have 50 or fewer beds"
+    location: "Appendix C, Excluding never-treated states ¶1"
+    script: analysis/app-control-timing.R
+    artifact: results/diagnostics/control-timing-counts.csv
+    artifact_key: "row=0,col=n_never_small"
+    expected_value: 10
+    tolerance:
+    status: UNVERIFIED
+    explanation: "The three never-treated states are n_never_states and never_state_names in the same row."
+    last_verified:
+
+  - id: appC-preperiod-treated-5
+    document: appendix
+    claim: "With a five-year pre-period ... the treated sample falls from 272 to 143 hospitals"
+    location: "Appendix C, Pre-period length ¶1"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^margin,Operating margin,5,[^,]+,[^,]+,[^,]+,[^,]+,[0-9]+,([0-9]+)"
+    expected_value: 143
+    tolerance:
+    status: UNVERIFIED
+    explanation: "N_treated column. The 272 comparison is the pre=3 row, audited as sec46elig-ntr-margin-state."
+    last_verified:
+
+  - id: appC-currentratio-pre5
+    document: appendix
+    claim: "Current ratio estimates range from -0.371 (pre-period = 5)"
+    location: "Appendix C, Pre-period length ¶2"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^current_ratio,Current ratio,5,(-?[0-9.]+)"
+    expected_value: -0.371
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-currentratio-pre2
+    document: appendix
+    claim: "to -0.206 (pre-period = 2)"
+    location: "Appendix C, Pre-period length ¶2"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^current_ratio,Current ratio,2,(-?[0-9.]+)"
+    expected_value: -0.206
+    tolerance: 0.001
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-netpatrev-range-low
+    document: appendix
+    claim: "Net patient revenue per bed ranges from -9.5 ... across pre-period lengths"
+    location: "Appendix C, Pre-period length ¶3"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^net_pat_rev,Net patient revenue per bed,5,(-?[0-9.]+)"
+    expected_value: -9.53
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-netpatrev-range-high
+    document: appendix
+    claim: "Net patient revenue per bed ranges ... to -20.7 thousand 2010 dollars per bed"
+    location: "Appendix C, Pre-period length ¶3"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^net_pat_rev,Net patient revenue per bed,2,(-?[0-9.]+)"
+    expected_value: -20.65
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-totopexp-range-low
+    document: appendix
+    claim: "operating expenses per bed from -17.8 ..."
+    location: "Appendix C, Pre-period length ¶3"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^tot_operating_exp,Operating expenses per bed,5,(-?[0-9.]+)"
+    expected_value: -17.80
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appC-totopexp-range-high
+    document: appendix
+    claim: "operating expenses per bed ... to -21.6"
+    location: "Appendix C, Pre-period length ¶3"
+    script: analysis/app-financial-preperiod.R
+    artifact: results/diagnostics/app-preperiod-financial.csv
+    artifact_key: "regex:^tot_operating_exp,Operating expenses per bed,3,(-?[0-9.]+)"
+    expected_value: -21.60
+    tolerance: 0.05
+    status: UNVERIFIED
+    explanation:
+    last_verified:
+
+  - id: appE-netpatrev-perm-p
+    document: appendix
+    claim: "Net patient revenue per bed ... significant under the jackknife but not under permutation (p = 0.07)"
+    location: "Appendix E ¶2"
+    script: analysis/app-permutation.R
+    artifact: results/diagnostics/permutation_pvalues.csv
+    artifact_key: "row=Net patient revenue per bed,col=p_value"
+    expected_value: 0.072
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appE-system-perm-p
+    document: appendix
+    claim: "... and system membership ... not under permutation (p = 0.09)"
+    location: "Appendix E ¶2"
+    script: analysis/app-permutation.R
+    artifact: results/diagnostics/permutation_pvalues.csv
+    artifact_key: "row=System membership,col=p_value"
+    expected_value: 0.094
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appF-n-states
+    document: appendix
+    claim: "Across the 35 states in our 1999 to 2001 cohorts"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^States & [0-9]+ & ([0-9]+)"
+    expected_value: 19
+    tolerance:
+    status: STALE
+    explanation: "The 35 is the sum of the 1999, 2000, and 2001 cohort columns (19 + 8 + 8), audited here through the 1999 column. The other two are sec33-states-2000 and sec33-states-2001."
+    last_verified:
+
+  - id: appF-rural-1999
+    document: appendix
+    claim: "The 1999 cohort is 37 percent rural"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Share of hospitals rural & [^&]+ & ([0-9.]+)"
+    expected_value: 0.367
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appF-rural-2000
+    document: appendix
+    claim: "against 23 percent for 2000"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Share of hospitals rural(?: & [^&]+){2} & ([0-9.]+)"
+    expected_value: 0.231
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appF-rural-2001
+    document: appendix
+    claim: "and 17 percent for 2001"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Share of hospitals rural(?: & [^&]+){3} & ([0-9.]+)"
+    expected_value: 0.168
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appF-smallhosp-correlation
+    document: appendix
+    claim: "the correlation between cohort year and the number of hospitals with 50 or fewer beds is -0.45"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Hospitals with 50 or fewer beds(?: & [^&]+){6} & (-?[0-9.]+)"
+    expected_value: -0.45
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appF-margin-1999
+    document: appendix
+    claim: "Pre-period operating margins are about 2.5 points lower in the 1999 cohort than in the 2001 cohort (1999 level)"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Operating margin, 1994-96 & [^&]+ & (-?[0-9.]+)"
+    expected_value: -0.024
+    tolerance: 0.001
+    status: STALE
+    explanation: "The gap itself is not persisted. The table gives -0.024 for 1999 and 0.002 for 2001, a 2.6-point difference that the prose rounds to about 2.5."
+    last_verified:
+
+  - id: appF-margin-2001
+    document: appendix
+    claim: "Pre-period operating margins are about 2.5 points lower in the 1999 cohort than in the 2001 cohort (2001 level)"
+    location: "Appendix F ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/att_adoption_timing.tex
+    artifact_key: "regex:^Operating margin, 1994-96(?: & [^&]+){3} & (-?[0-9.]+)"
+    expected_value: 0.002
+    tolerance: 0.001
+    status: STALE
+    explanation: "See appF-margin-1999."
+    last_verified:
+
+  - id: appG-converter-margin
+    document: appendix
+    claim: "Converters had a mean three-year operating margin of -9 percent"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Operating margin .3-year mean. & (-?[0-9.]+)"
+    expected_value: -0.094
+    tolerance: 0.002
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-converter-currentratio
+    document: appendix
+    claim: "and a current ratio of 2.6"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Current ratio .3-year mean. & ([0-9.]+)"
+    expected_value: 2.606
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-closer-margin
+    document: appendix
+    claim: "against -14 percent ... for closing hospitals with 50 or fewer beds"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Operating margin .3-year mean.(?: & [^&]+){2} & (-?[0-9.]+)"
+    expected_value: -0.136
+    tolerance: 0.002
+    status: STALE
+    explanation: "Small closers column."
+    last_verified:
+
+  - id: appG-closer-currentratio
+    document: appendix
+    claim: "and ... 1.7 for closing hospitals with 50 or fewer beds"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Current ratio .3-year mean.(?: & [^&]+){2} & ([0-9.]+)"
+    expected_value: 1.726
+    tolerance: 0.01
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-share-below-median
+    document: appendix
+    claim: "only about a quarter (27 percent) of converters had margins below the median closer"
+    location: "Appendix G ¶1"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/converters-closers-summary.csv
+    artifact_key: "row=0,col=share_converters_below"
+    expected_value: 0.268
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-rural-converters
+    document: appendix
+    claim: "Converters were also more rural (67 percent ...)"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Rural & ([0-9.]+)"
+    expected_value: 0.669
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-rural-closers
+    document: appendix
+    claim: "(... against 18 percent)"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Rural(?: & [^&]+){2} & ([0-9.]+)"
+    expected_value: 0.177
+    tolerance: 0.005
+    status: STALE
+    explanation: "Small closers column."
+    last_verified:
+
+  - id: appG-distance-converters
+    document: appendix
+    claim: "and more isolated (16 ... miles on average to the nearest hospital)"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Miles to nearest hospital & ([0-9.]+)"
+    expected_value: 16.4
+    tolerance: 0.1
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-distance-closers
+    document: appendix
+    claim: "(... versus 12 miles on average to the nearest hospital)"
+    location: "Appendix G ¶1; Table G1"
+    script: analysis/R1_revision.R
+    artifact: results/att_converters_closers.tex
+    artifact_key: "regex:^Miles to nearest hospital(?: & [^&]+){2} & ([0-9.]+)"
+    expected_value: 11.6
+    tolerance: 0.1
+    status: STALE
+    explanation: "Small closers column."
+    last_verified:
+
+  - id: appG-split-le25-change
+    document: appendix
+    claim: "Hospitals already at or below 25 beds do not downsize at all, gaining 1.9 beds on average"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^25 or fewer,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: 1.86
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-split-le25-share
+    document: appendix
+    claim: "and 94 percent remain at or below 25 three years after designation"
+    location: "Appendix G ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^25 or fewer,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
+    expected_value: 0.943
+    tolerance: 0.005
+    status: STALE
+    explanation: "share_le25 column. Not shown in Table G2, which reports share_at25 (0.23) instead."
+    last_verified:
+
+  - id: appG-split-26-35
+    document: appendix
+    claim: "Hospitals at 26 to 35 beds shed 3.3 beds on average"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^26 to 35,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: -3.30
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-split-36-50
+    document: appendix
+    claim: "those at 36 to 50 shed 13.8"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^36 to 50,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: -13.78
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-split-51-75
+    document: appendix
+    claim: "and those at 51 to 75 shed 17.3"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^51 to 75,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
+    expected_value: -17.28
+    tolerance: 0.05
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-split-two-thirds-26-35
+    document: appendix
+    claim: "Roughly two-thirds of the 26 to 50 group are at exactly 25 beds three years after designation (26 to 35 bin)"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^26 to 35,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 0.698
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appG-split-two-thirds-36-50
+    document: appendix
+    claim: "Roughly two-thirds of the 26 to 50 group are at exactly 25 beds three years after designation (36 to 50 bin)"
+    location: "Appendix G ¶2; Table G2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/bedsize-split.csv
+    artifact_key: "regex:^36 to 50,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 0.660
+    tolerance: 0.005
+    status: STALE
+    explanation:
+    last_verified:
+
+  - id: appB-attrition-system
+    document: appendix
+    claim: "Attrition is largest for system membership, where roughly two-thirds of units in every cohort drop out of the balanced panel"
+    location: "Appendix B ¶2"
+    script: analysis/app-dd-diagnostics.R
+    artifact: results/diagnostics/diag-sample-comparison.csv
+    artifact_key: "regex:^system,1999,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
+    expected_value: 66.8
+    tolerance: 0.5
+    status: UNVERIFIED
+    explanation: "pct_lost_to_balance for the 1999 cohort; the 2000 and 2001 cohorts read 68.1 and 66.8 in the same file."
+    last_verified:
+
+  - id: appF-ols-rural-p
+    document: appendix
+    claim: "rural share and the number of small hospitals are the only variables near conventional significance (p = 0.09 ...)"
+    location: "Appendix F ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/adoption-timing-ols.csv
+    artifact_key: "regex:^share_rural,[^,]+,[^,]+,[^,]+,([0-9.eE+-]+),"
+    expected_value: 0.087
+    tolerance: 0.005
+    status: STALE
+    explanation: "p.value of share_rural in the joint OLS of first designation year on six state characteristics, 35 states."
+    last_verified:
+
+  - id: appF-ols-small-p
+    document: appendix
+    claim: "... (p = 0.09 and 0.08)"
+    location: "Appendix F ¶2"
+    script: analysis/R1_revision.R
+    artifact: results/diagnostics/adoption-timing-ols.csv
+    artifact_key: "regex:^n_small,[^,]+,[^,]+,[^,]+,([0-9.eE+-]+),"
+    expected_value: 0.084
+    tolerance: 0.005
+    status: STALE
+    explanation: "p.value of n_small in the same regression."
+    last_verified:

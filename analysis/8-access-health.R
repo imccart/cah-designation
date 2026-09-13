@@ -131,8 +131,12 @@ avg_adm_cah <- hosp_2005 %>%
   summarize(mean_adm = mean(ADMTOT, na.rm = TRUE)) %>%
   pull(mean_adm)
 
-# Closure mortality calibration (Gujral & Basu 2019: 0.78pp)
+# Closure mortality calibration (Gujral & Basu 2019: 0.78pp). The closure CI
+# carries through to the lives figure, so Section 5.2 quotes a range as well as
+# a point estimate.
 lives_saved_closure <- closures_prevented * avg_adm_cah * 0.0078
+closures_prevented_lo <- abs(delta_C + 1.96 * delta_C_se) / 100 * n_hosp_cah_states
+closures_prevented_hi <- abs(delta_C - 1.96 * delta_C_se) / 100 * n_hosp_cah_states
 
 rho_star_beds <- (abs(delta_C) / 100 * B_close) / abs(delta_B)
 rho_star_ipd  <- (abs(delta_C) / 100 * IPD_close) / (abs(delta_IPD) * B_close)
@@ -147,7 +151,14 @@ tibble(delta_B = delta_B, delta_C = delta_C, delta_IPD = delta_IPD,
        rho_star_beds = rho_star_beds, rho_star_ipd = rho_star_ipd,
        closures_prevented = closures_prevented,
        avg_adm_cah = avg_adm_cah,
-       lives_saved_closure = lives_saved_closure) %>%
+       lives_saved_closure = lives_saved_closure,
+       n_hosp_cah_states = n_hosp_cah_states,
+       n_converters = n_converters,
+       closure_prob_per_converter = closures_prevented / n_converters,
+       closures_prevented_lo = closures_prevented_lo,
+       closures_prevented_hi = closures_prevented_hi,
+       lives_saved_lo = closures_prevented_lo * avg_adm_cah * 0.0078,
+       lives_saved_hi = closures_prevented_hi * avg_adm_cah * 0.0078) %>%
   write_csv("results/diagnostics/capacity-accounting.csv")
 
 

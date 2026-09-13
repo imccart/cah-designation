@@ -91,7 +91,7 @@ rr_cs <- function(oname, design) {
                 if (design == "state") 1999:2001 else 1999:2005,
                 bed.cut = bed.cut)
   if (is.null(out)) return(NULL)
-  list(att = out$att, lo = out$ci_low, hi = out$ci_high)
+  list(att = out$att, lo = out$ci_low, hi = out$ci_high, es = out$es)
 }
 
 write_tabular <- function(lines, header, path, align) {
@@ -133,8 +133,11 @@ for (oname in names(visit_map)) {
     s <- rr_sdid(oname, if (dsg == "state") stack.hosp else stack.elig, if (dsg == "state") 1999:2001 else 1999:2005, pre = 5)
     cs <- rr_cs(oname, dsg)
     if (!is.null(s)) {
+      ## pre_mean is the treated pre-period mean, the base for the percent
+      ## effects quoted in the abstract and Section 4.3.
       visit_rows[[length(visit_rows) + 1]] <- tibble(outcome = o$label, design = dsg, sdid_att = s$att, sdid_lo = s$lo, sdid_hi = s$hi, sdid_ntr = s$ntr,
-                                                     cs_att = if (is.null(cs)) NA_real_ else cs$att, cs_lo = if (is.null(cs)) NA_real_ else cs$lo, cs_hi = if (is.null(cs)) NA_real_ else cs$hi)
+                                                     cs_att = if (is.null(cs)) NA_real_ else cs$att, cs_lo = if (is.null(cs)) NA_real_ else cs$lo, cs_hi = if (is.null(cs)) NA_real_ else cs$hi,
+                                                     pre_mean = s$pre_mean, pct_of_pre_mean = s$att / s$pre_mean)
       p <- ggplot(s$agg, aes(tau)) +
         geom_line(aes(y = treated, linetype = "Treated"), linewidth = 0.9) +
         geom_line(aes(y = synthetic, linetype = "Synthetic control"), linewidth = 0.9) +
@@ -142,6 +145,22 @@ for (oname in names(visit_map)) {
         scale_linetype_manual(values = c("Treated" = "solid", "Synthetic control" = "dashed")) +
         labs(x = "Event time", y = o$label, linetype = NULL) + theme_bw(base_size = 13) + theme(legend.position = "bottom")
       ggsave(sprintf("results/%s-%s-sdid.png", o$stub, dsg), p, width = 6.5, height = 4.25, dpi = 300)
+    }
+    ## CS event study for the appendix, drawn the same way as in 2-hospital-dd.R.
+    if (!is.null(cs)) {
+      est.cs <- cs$es %>%
+        transmute(event_time, estimate, se) %>%
+        mutate(conf.low  = if_else(event_time != -1, estimate - 1.96 * se, 0),
+               conf.high = if_else(event_time != -1, estimate + 1.96 * se, 0))
+      p.cs <- ggplot(est.cs, aes(x = event_time, y = estimate)) +
+        geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
+                      width = 0, linewidth = 0.5, alpha = 0.3, color = "black") +
+        geom_point(size = 2.5, color = "black", stroke = 0.1, fill = "white") +
+        geom_hline(yintercept = 0, color = "black", linewidth = 1) +
+        scale_x_continuous(breaks = seq(-10, 10, by = 1)) +
+        labs(x = "Event time", y = "Estimated Effects") +
+        theme_bw() + theme(legend.position = "none")
+      ggsave(sprintf("results/%s-%s-cs.png", o$stub, dsg), p.cs, width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
     }
   }
 }
@@ -196,14 +215,19 @@ antic_header <- c(
 
 write_tabular(antic_lines, antic_header, "results/att_antic_state.tex", "lcccc")
 ## Mean beds among eventual converters by year relative to designation, for the
-## statement that most of the reduction occurs at or after designation.
+## statement that most of the reduction occurs at or after designation. The 25th
+## percentile and mean inpatient days per bed are the other two series plotted in
+## Figure 5 and quoted in Sections 2 and 4.4.
 conv_beds <- est.dat %>% filter(!is.na(eff_year)) %>%
   group_by(ID) %>% mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>% ungroup() %>%
   filter(min_bedsize <= bed.cut, !is.na(BDTOT)) %>%
   mutate(event_time = year - eff_year) %>% filter(event_time >= -5, event_time <= 5)
 write_csv(bind_rows(conv_beds %>% filter(eff_year %in% 1999:2001) %>% mutate(cohorts = "1999-2001"),
                     conv_beds %>% filter(eff_year %in% 1999:2005) %>% mutate(cohorts = "1999-2005")) %>%
-            group_by(cohorts, event_time) %>% summarise(mean_beds = mean(BDTOT), n = n(), .groups = "drop"),
+            group_by(cohorts, event_time) %>%
+            summarise(mean_beds = mean(BDTOT), p25_beds = quantile(BDTOT, 0.25),
+                      mean_ip_per_bed = mean(ip_per_bed, na.rm = TRUE),
+                      n = n(), .groups = "drop"),
           "results/diagnostics/converter-beds-eventtime.csv")
 
 

@@ -34,6 +34,28 @@ elig.cohort.results <- tibble(
   se = numeric(), Ntr = numeric()
 )
 
+## The treated and synthetic paths plotted in the appendix figures. The treated
+## pre-designation mean is the base for the percent effects quoted in the
+## response letter, so the paths go to a file as well as a plot.
+elig.event.paths <- tibble(
+  outcome = character(), tau = numeric(), treated = numeric(), synthetic = numeric()
+)
+
+## Size of the control pool this design draws on, which Section 4.6 quotes.
+## Hospitals serve as controls in more than one cohort, so the distinct count
+## across cohorts is the relevant figure; the per-cohort counts go alongside it.
+elig.control.pool <- stack.elig %>%
+  group_by(ID) %>% mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>% ungroup() %>%
+  filter(min_bedsize <= bed.cut, treated == 0)
+
+bind_rows(
+  elig.control.pool %>%
+    summarise(stack_group = NA_real_, n_control = n_distinct(ID)),
+  elig.control.pool %>%
+    group_by(stack_group) %>% summarise(n_control = n_distinct(ID), .groups = "drop")
+) %>%
+  write_csv("results/diagnostics/elig-control-pool.csv")
+
 # Main loop ------------------------------------------------------------------
 for (oname in names(elig_outcome_map)) {
   o <- elig_outcome_map[[oname]]
@@ -206,7 +228,13 @@ for (oname in names(elig_outcome_map)) {
     cs_ci_high   = cs_att_val + 1.96 * cs_se_val,
     sdid_ntr     = sum(atts_all$Ntr)
   ))
+
+  elig.event.paths <- bind_rows(elig.event.paths,
+    agg_paths %>% mutate(outcome = outcome_label) %>%
+      select(outcome, tau, treated, synthetic))
 }
+
+write_csv(elig.event.paths, "results/diagnostics/elig-event-paths.csv")
 
 # LaTeX summary table --------------------------------------------------------
 fmt <- function(x) {

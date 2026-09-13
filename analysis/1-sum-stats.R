@@ -19,6 +19,15 @@ fig.hosp.type <- est.dat %>% group_by(year, cah) %>%
   )
 ggsave("results/desc-hosp-types.png", fig.hosp.type, width = 6.5, height = 4.25, dpi = 300, scale=1.5)
 
+## Section 3.3 quotes the panel's hospital count and the level at which the
+## count of CAHs settles, so the series behind the figure goes to a file.
+est.dat %>%
+  count(year, cah, name = "hosp_count") %>%
+  mutate(panel_hospitals = n_distinct(est.dat$ID),
+         panel_year_min = min(est.dat$year),
+         panel_year_max = max(est.dat$year)) %>%
+  write_csv("results/diagnostics/hospital-counts-by-year.csv")
+
 
 ## Treatment timing --------------------------------------------------------
 

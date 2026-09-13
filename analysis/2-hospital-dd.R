@@ -29,6 +29,13 @@ hosp.cohort.results <- tibble(
   se = numeric(), Ntr = numeric()
 )
 
+## The treated and synthetic paths plotted in the main-text figures. Section 4.4
+## quotes the margin path directly, so it goes to a file as well as a plot.
+hosp.event.paths <- tibble(
+  outcome = character(), tau = numeric(), treated = numeric(),
+  synthetic = numeric(), cohorts_n = numeric()
+)
+
 # Main loop -------------------------------------------------------------------
 for (oname in names(hosp_outcome_map)) {
   o <- hosp_outcome_map[[oname]]
@@ -254,7 +261,13 @@ for (oname in names(hosp_outcome_map)) {
 
   hosp.cohort.results <- bind_rows(hosp.cohort.results,
     atts_all %>% mutate(outcome = outcome_label))
+
+  hosp.event.paths <- bind_rows(hosp.event.paths,
+    agg_paths %>% mutate(outcome = outcome_label) %>%
+      select(outcome, tau, treated, synthetic, cohorts_n))
 }
+
+write_csv(hosp.event.paths, "results/diagnostics/sdid-event-paths.csv")
 
 # Cohort-specific SDID LaTeX output -------------------------------------------
 fmt <- function(x) {

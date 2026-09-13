@@ -415,6 +415,17 @@ never_small <- est.dat %>%
   filter(min_beds <= bed.cut) %>%
   nrow()
 
+## The appendix quotes the immediate-adopter share and the number of small
+## hospitals in never-treated states, so both go to a file.
+tibble(n_immediate = n_immediate,
+       n_treated_total = n_treated_total,
+       share_immediate = n_immediate / n_treated_total,
+       n_never_states = never_states$n_states,
+       n_never_hosp = never_states$n_hosp,
+       n_never_small = never_small,
+       never_state_names = never_states$states) %>%
+  write_csv("results/diagnostics/control-timing-counts.csv")
+
 # Create modified est.dat excluding never-treated states
 est.dat.noNever <- est.dat %>% filter(state_treat_year > 0)
 state.dat.noNever <- state.dat %>% filter(state_treat_year > 0)

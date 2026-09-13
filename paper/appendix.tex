@@ -59,7 +59,7 @@ We construct six financial measures (operating margin, current ratio, net patien
 
 \paragraph{\textit{HCRIS.}} Medicare-certified hospitals file annual cost reports, from which we extract net patient revenue, total operating expenses, current assets, current liabilities, net fixed assets (land, buildings, and equipment net of accumulated depreciation), and the components of accumulated depreciation. These fields are drawn from Worksheet G (balance sheet) and Worksheet G-3 (income statement) of the cost report. When a hospital files multiple non-overlapping reports in a single fiscal year, we sum the relevant fields across reports. CMS publishes cost report data beginning with fiscal year 1996, so our financial series begins in 1996.
 
-\paragraph{\textit{Linking converters to their pre-designation cost reports.}} Cost reports are identified by Medicare provider number, and a hospital receives a new number when it is designated as a CAH. We therefore match each converter's pre-designation years to cost reports filed under non-CAH provider numbers in the same state, using name similarity within zip code or city. We drop earlier numbers claimed by two converters, numbers that belong to another hospital, and numbers whose reports continue for more than two years after designation. Of converters' pre-designation hospital-years from 1996 onward, 87 percent have a cost report, compared with 15 percent under a time-invariant crosswalk that assigns each hospital one provider number for all years.
+\paragraph{\textit{Linking converters to their pre-designation cost reports.}} Cost reports are identified by Medicare provider number, and a hospital receives a new number when it is designated as a CAH. We therefore match each converter's pre-designation years to cost reports filed under non-CAH provider numbers in the same state, using name similarity within zip code or city. We drop earlier numbers claimed by two converters, numbers that belong to another hospital, and numbers whose reports continue for more than two years after designation. Of converters' pre-designation hospital-years from 1996 onward, 86 percent have a cost report, compared with 15 percent under a time-invariant crosswalk that assigns each hospital one provider number for all years.
 
 \subsection{Measure Definitions}
 
@@ -113,7 +113,7 @@ $$
 
 Our primary estimates use the synthetic difference-in-differences (SDID) estimator, which requires a balanced panel of units observed in every period of the event window \citep{arkhangelsky2021}. This requirement can reduce sample sizes relative to estimators that accommodate unbalanced panels, such as the Callaway and Sant'Anna (CS) estimator \citep{callaway2021}. Similarly, the SDID estimator assigns nonnegative weights to control units to match the treated group's pre-period trajectory. If these weights are highly concentrated on a small number of controls, the resulting estimates may be sensitive to idiosyncratic variation in those units. We present three diagnostics below to assess these concerns.
 
-Table~\ref{tab:diag-sample} reports, for each outcome and cohort, the number of treated and control units in the SDID balanced panel and in the full sample available to the CS estimator, together with the share of units lost to balancing. Attrition is largest in the 1999 cohort of the financial outcomes, whose event window reaches back to the first years of the cost report data. Table~\ref{tab:diag-weights} reports the number of control units, the largest weight on any single control, the share of weight on the five largest controls, and the Herfindahl index of the weights. For the hospital-level outcomes, the largest weight on any control is at most 0.06 and the five largest controls never carry more than 27 percent of the weight, so no estimate depends on a handful of controls. The state-level outcomes have far fewer controls, 5 to 21 states depending on the cohort, so their weights are necessarily more concentrated.
+Table~\ref{tab:diag-sample} reports, for each outcome and cohort, the number of treated and control units in the SDID balanced panel and in the full sample before balancing, together with the share of units lost to balancing. Attrition is largest for system membership, where roughly two-thirds of units in every cohort drop out of the balanced panel, and for the 1999 cohort of the financial outcomes, whose event window reaches back to the first years of the cost report data. Table~\ref{tab:diag-weights} reports the number of control units, the largest weight on any single control, the share of weight on the five largest controls, and the Herfindahl index of the weights. For the hospital-level outcomes, the largest weight on any control is at most 0.06 and the five largest controls never carry more than 27 percent of the weight, so no estimate depends on a handful of controls. The state-level outcomes have far fewer controls, 5 to 21 states depending on the cohort, so their weights are necessarily more concentrated.
 
 Whether converters and the control pool were on different paths before designation indicates how much the SDID weights have to correct and which outcomes show restructuring before designation. Table~\ref{tab:diag-pretrend} therefore reports pre-trend tests on the unweighted balanced panel, regressing each outcome on the interaction of event time and treatment status over pre-treatment observations. The fit of the synthetic control itself is visible in the treated and synthetic paths in the main-text figures.
 
@@ -142,7 +142,7 @@ Figure~\ref{fig:statecut-sensitivity} presents SDID estimates for all outcomes a
 Our baseline uses a 5-year post-period, meaning control hospitals must not convert to CAH within 5 years of the cohort year. This requirement mechanically excludes hospitals that convert soon after their state opens the CAH program, selecting late- or never-converters into the control pool. If these hospitals differ systematically from treated hospitals (e.g., in financial health, management capacity, or payer mix), the exclusion could bias the comparison. Shortening the post-period to 4, 3, or 2 years relaxes this restriction, allowing hospitals that took up CAH relatively quickly after state implementation to serve as controls and producing a control pool that is more compositionally similar to treated hospitals. Figure~\ref{fig:postperiod-sensitivity} reports SDID estimates at post-period lengths of 5, 4, 3, and 2 years. The results are broadly stable across all post-period lengths, with capacity reductions, closure effects, and positive margin effects persisting even at the shortest 2-year window.
 
 \paragraph{\textit{Excluding immediate adopters.}}
-Hospitals that convert to CAH in the same year their state first implements the program may represent a selected group of particularly proactive or financially distressed facilities. To assess whether these ``immediate adopters'' drive our results, we re-estimate the main specification after reclassifying them as untreated. In our sample, 121 of 1,466 treated hospitals (8.3\%) converted in their state's first year of CAH availability. Figure~\ref{fig:noimmediate-sensitivity} shows that dropping these hospitals has minimal effect on the estimates, with point estimates for all outcomes remaining close to the baseline.
+Hospitals that convert to CAH in the same year their state first implements the program may represent a selected group of particularly proactive or financially distressed facilities. To assess whether these ``immediate adopters'' drive our results, we re-estimate the main specification after reclassifying them as untreated. Of the 1,466 hospitals with a designation date anywhere in our panel, 121 (8.3\%) converted in their state's first year of CAH availability. Figure~\ref{fig:noimmediate-sensitivity} shows that dropping these hospitals has minimal effect on the estimates, with point estimates for all outcomes remaining close to the baseline.
 
 \paragraph{\textit{Excluding never-treated states.}}
 The control pool in our main specification includes hospitals from states that never adopted CAH designation during our sample period. These states (Connecticut, New Jersey, and Rhode Island) are relatively urban, raising the concern that their hospitals may not be comparable to treated hospitals in rural states. However, only 10 hospitals in these states have 50 or fewer beds in any year, so they contribute minimally to the control group after the bed size restriction. Figure~\ref{fig:nonever-sensitivity} confirms that excluding never-treated states entirely has negligible effects on the estimates.
@@ -170,7 +170,7 @@ Table~\ref{tab:elig-overall} reports overall ATT estimates from the eligibility-
 
 \subsection{Callaway--Sant'Anna Event-Study Estimates}
 
-This section presents Callaway and Sant'Anna (CS) event-study estimates. Event studies based on the state-timing design are presented in Figures~\ref{fig:cs-financial}--\ref{fig:cs-org}, which underlie the overall CS ATTs presented in the main text. Analogous event-study estimates for the eligibility-restricted design are presented in Figures~\ref{fig:elig-cs-financial}--\ref{fig:elig-cs-capacity}, along with the overall ATTs in Tables~\ref{tab:elig-overall} and~\ref{tab:visits-cs}.
+This section presents Callaway and Sant'Anna (CS) event-study estimates. Event studies based on the state-timing design are presented in Figures~\ref{fig:cs-financial}--\ref{fig:cs-visits}, which underlie the overall CS ATTs presented in the main text. Analogous event-study estimates for the eligibility-restricted design are presented in Figures~\ref{fig:elig-cs-financial}--\ref{fig:elig-cs-visits}, along with the overall ATTs in Tables~\ref{tab:elig-overall} and~\ref{tab:visits-cs}.
 
 \subsection{Interactive Fixed Effects Estimates}
 
@@ -199,7 +199,9 @@ Figure~\ref{fig:permutation} displays the placebo distributions for all outcomes
 \section{State Adoption Timing}
 \label{sec:app-adoption}
 
-To see whether observable characteristics predict a state's adoption cohort, we relate it to the state's hospital market structure, closure rates, operating margins, and unemployment rate over 1990 to 1996. The results are in Table~\ref{tab:adoption-timing}. Across the 35 states in our 1999 to 2001 cohorts, earlier adopters are more rural and have more small hospitals. The 1999 cohort is 37 percent rural against 23 percent for 2000 and 17 percent for 2001, and the correlation between cohort year and the number of hospitals with 50 or fewer beds is $-0.45$. Neither closure rates nor unemployment predicts timing, in levels or in changes, conditional on rurality and the number of small hospitals. Pre-period operating margins are about 2.5 points lower in the 1999 cohort than in the 2001 cohort. We read this pattern as the program reaching its target population first, rather than as states responding to hospital distress or closures.
+To see whether observable characteristics predict a state's adoption cohort, we relate it to the state's hospital market structure, closure rates, operating margins, and unemployment rate over 1990 to 1996. Simple means and correlations are summarized in Table~\ref{tab:adoption-timing}. Across the 35 states in our 1999 to 2001 cohorts, earlier adopters are more rural and have more small hospitals. Specifically, the 1999 cohort is 37 percent rural against 23 percent for 2000 and 17 percent for 2001, and the correlation between cohort year and the number of hospitals with 50 or fewer beds is $-0.45$. Pre-period operating margins are about 2.5 points lower in the 1999 cohort than in the 2001 cohort.
+
+In a simple regression of designation timing on rural share, the number of small hospitals, closure rates, and unemployment, rural share and the number of small hospitals are the only variables near conventional significance ($p = 0.09$ and $0.08$). We read this pattern as the program reaching its target population first, rather than as states responding to hospital distress or closures.
 
 
 %%% ===================================================================
@@ -505,6 +507,24 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
+\caption[CS Event Studies: Visits and Births]{\textbf{CS Event-Study Estimates: Outpatient Visits, Emergency Department Visits, and Births}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
+\label{fig:cs-visits}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/opvisits-state-cs.png} &
+\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-state-cs.png} \\
+\small (a) Outpatient Visits per Bed & \small (b) Non-ED Outpatient Visits per Bed \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/edvisits-state-cs.png} &
+\includegraphics[width=0.48\textwidth]{../results/births-state-cs.png} \\
+\small (c) Emergency Department Visits per Bed & \small (d) Births
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
 \caption[CS Event Studies (Eligibility): Financial]{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Financial Performance and Capital}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
 \label{fig:elig-cs-financial}
 \begin{tabular}{cc}
@@ -537,6 +557,24 @@ The main text reports estimates with treatment dated one year before designation
 \small (c) Full Time Equivalent RNs & \small (d) Inpatient Days per Bed \\[0.5cm]
 \multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/elig-system-cs.png}} \\
 \multicolumn{2}{c}{\small (e) System Membership}
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Eligibility-Restricted CS Event Studies: Visits and Births]{\textbf{Eligibility-Restricted CS Event-Study Estimates: Outpatient Visits, Emergency Department Visits, and Births}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
+\label{fig:elig-cs-visits}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/opvisits-elig-cs.png} &
+\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-elig-cs.png} \\
+\small (a) Outpatient Visits per Bed & \small (b) Non-ED Outpatient Visits per Bed \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/edvisits-elig-cs.png} &
+\includegraphics[width=0.48\textwidth]{../results/births-elig-cs.png} \\
+\small (c) Emergency Department Visits per Bed & \small (d) Births
 \end{tabular}
 \end{minipage}
 \end{figure}
