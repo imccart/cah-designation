@@ -2,26 +2,33 @@
 
 ## Author:        Ian McCarthy
 ## Date Created:  5/17/2023
-## Date Edited:   2/24/2026
+## Date Edited:   9/12/2026
 ## Description:   Run Analysis Files
 ## Note:          Run _build-estimation-data.r first to generate the CSVs
 
 
 # Preliminaries -----------------------------------------------------------
-source('analysis/0-setup.R')
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, haven, readxl, janitor, here, zoo, fedmatch, zipcodeR,
+               fixest, did, did2s, BMisc, fect, glmnet, nnet, mlogit, survival,
+               scales, plotly, panelView, dotwhisker, patchwork, sf,
+               modelsummary, kableExtra, broom, synthdid)
+
 source('analysis/functions.R')
 
 
 # Read estimation data -----------------------------------------------------
-est.dat   <- read_csv('data/output/estimation_data.csv')
-state.dat <- read_csv('data/output/state_estimation_data.csv')
+est.dat   <- read_csv('data/output/estimation_data.csv', col_types = cols(ID = col_character()))
+state.dat <- read_csv('data/output/state_estimation_data.csv', show_col_types = FALSE)
+fin.vars  <- c('margin', 'current_ratio', 'net_fixed', 'capex', 'net_pat_rev', 'tot_operating_exp')
 
 
 # Global parameters --------------------------------------------------------
+set.seed(1234)       # the CS bootstrap is random; seed so runs reproduce
 bed.cut   <- 50
 post      <- 5
 state.cut <- 0
-financial.pre <- 5
+financial.pre <- 3   # HCRIS financials begin in 1996-97; 3 pre-years gives every cohort its full window
 
 
 # Stacked datasets ---------------------------------------------------------
@@ -175,10 +182,8 @@ ggsave("results/forest-sdid.png", p_forest,
 # Heterogeneity ------------------------------------------------------------
 source('analysis/6-heterogeneity.R')         # -> het.results
 
-
 # Factor-model estimation (fect) ------------------------------------------
 source('analysis/7-gsynth.R')                # -> gsynth.results
-
 
 # Access and health implications --------------------------------------------
 source('analysis/8-access-health.R')          # -> map, histogram, PSA, county CSVs
@@ -191,4 +196,7 @@ source('analysis/app-statecut-sensitivity.R') # -> statecut-sensitivity.png
 source('analysis/app-bedcut-sensitivity.R')   # -> bedcut-sensitivity.png
 source('analysis/app-anticipation.R')         # -> att_anticipation.tex
 source('analysis/app-control-timing.R')       # -> control-timing-*.png
+
+# --- R&R additional analyses (JPubE R1, JPUBE-D-26-00838) -------------------
+source('analysis/R1_revision.R')
 

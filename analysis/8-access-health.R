@@ -2,7 +2,6 @@
 # Self-contained: expects from _run-analysis.r: est.dat, hosp.results.table, state.results.table
 # Outputs: CAH-exposure map, net capacity Monte Carlo figure, diagnostic CSVs
 
-cat("  [access-health] Starting displacement analysis ...\n")
 
 
 # 0. Haversine function (inlined from data-code/functions.R) -----------------
@@ -41,12 +40,8 @@ hosp_2005 <- est.dat %>%
   filter(!is.na(lat), !is.na(lon)) %>%
   mutate(is_cah_2005 = ifelse(!is.na(eff_year) & eff_year <= 2005, 1, 0))
 
-cat(sprintf("    %d open hospitals in 2005 (%d CAHs)\n",
-            nrow(hosp_2005), sum(hosp_2005$is_cah_2005)))
-
 
 # 2. Next-nearest hospital distance -----------------------------------------
-cat("    Computing pairwise hospital distances ...\n")
 
 hosp_coords <- hosp_2005 %>% select(ID, lat, lon)
 n_hosp <- nrow(hosp_coords)
@@ -63,12 +58,16 @@ for (i in seq_len(n_hosp)) {
 hosp_2005 <- hosp_2005 %>%
   mutate(dist_next = dist_next)
 
-cat(sprintf("    Median distance to next-nearest hospital: %.1f miles\n",
-            median(hosp_2005$dist_next)))
-cat(sprintf("    Among CAH converters: median = %.1f, IQR = [%.1f, %.1f]\n",
-            median(hosp_2005$dist_next[hosp_2005$is_cah_2005 == 1]),
-            quantile(hosp_2005$dist_next[hosp_2005$is_cah_2005 == 1], 0.25),
-            quantile(hosp_2005$dist_next[hosp_2005$is_cah_2005 == 1], 0.75)))
+## Distance to the next-nearest hospital, overall and among converters. Section
+## 5.2 quotes the converter median and IQR.
+hosp_2005 %>%
+  summarise(median_all = median(dist_next),
+            median_cah = median(dist_next[is_cah_2005 == 1]),
+            p25_cah    = quantile(dist_next[is_cah_2005 == 1], 0.25),
+            p75_cah    = quantile(dist_next[is_cah_2005 == 1], 0.75),
+            n_hospitals = n(),
+            n_cah = sum(is_cah_2005 == 1)) %>%
+  write_csv("results/diagnostics/next-nearest-distance.csv")
 
 
 # 3. Pull SDID estimates and compute key quantities --------------------------
@@ -138,17 +137,39 @@ lives_saved_closure <- closures_prevented * avg_adm_cah * 0.0078
 rho_star_beds <- (abs(delta_C) / 100 * B_close) / abs(delta_B)
 rho_star_ipd  <- (abs(delta_C) / 100 * IPD_close) / (abs(delta_IPD) * B_close)
 
-cat(sprintf("    delta_B = %.3f, delta_C = %.3f, delta_IPD = %.3f\n",
-            delta_B, delta_C, delta_IPD))
-cat(sprintf("    rho_obs = %.3f, B_close = %.1f (SE=%.2f), IPD_close = %.1f (SE=%.1f)\n",
-            rho_obs, B_close, B_close_se, IPD_close, IPD_close_se))
-cat(sprintf("    rho_star_beds = %.4f, rho_star_ipd = %.4f\n", rho_star_beds, rho_star_ipd))
-cat(sprintf("    Closures prevented: %.1f\n", closures_prevented))
-cat(sprintf("    Avg CAH admissions: %.0f\n", avg_adm_cah))
-cat(sprintf("    Lives saved (closure channel): %.1f\n", lives_saved_closure))
+## The capacity accounting in Section 5.1 and the lives-saved figure in Section
+## 5.2 are quoted from these quantities, so they go to a file rather than the
+## console. rho_star_beds is the paper's break-even share.
+tibble(delta_B = delta_B, delta_C = delta_C, delta_IPD = delta_IPD,
+       rho_obs = rho_obs,
+       B_close = B_close, B_close_se = B_close_se,
+       IPD_close = IPD_close, IPD_close_se = IPD_close_se,
+       rho_star_beds = rho_star_beds, rho_star_ipd = rho_star_ipd,
+       closures_prevented = closures_prevented,
+       avg_adm_cah = avg_adm_cah,
+       lives_saved_closure = lives_saved_closure) %>%
+  write_csv("results/diagnostics/capacity-accounting.csv")
 
 
 # 4. Monte Carlo: net capacity accounting ------------------------------------
+# The marginal hospital's bed size is drawn from the observed bed sizes of
+# small hospitals in the year before they closed (R&R, R1 comment 1), rather
+# than from a normal centered on the mean converter.
+closer_beds <- est.dat %>%
+  arrange(ID, year) %>%
+  group_by(ID) %>%
+  mutate(beds_lag = lag(BDTOT), year_lag = lag(year)) %>%
+  ungroup() %>%
+  ## year_lag == year - 1 keeps only bed counts observed the year before closure
+  filter(closed == 1, year >= 1995, year <= 2010, !is.na(beds_lag),
+         year_lag == year - 1, beds_lag <= 50) %>%
+  pull(beds_lag)
+## Section 5.1 quotes the count and mean of this distribution as the basis for
+## the closer-based break-even alternative.
+tibble(n = length(closer_beds), mean = mean(closer_beds), median = median(closer_beds),
+       p25 = quantile(closer_beds, 0.25), p10 = quantile(closer_beds, 0.10)) %>%
+  write_csv("results/diagnostics/closer-bedsize.csv")
+
 set.seed(42)
 n_draws <- 10000
 
@@ -157,7 +178,7 @@ mc_draws <- tibble(
   delta_C_draw   = rnorm(n_draws, delta_C, delta_C_se),
   delta_IPD_draw = rnorm(n_draws, delta_IPD, delta_IPD_se),
   rho_draw       = runif(n_draws, 0.15, 0.45),
-  B_close_draw   = rnorm(n_draws, B_close, B_close_se),
+  B_close_draw   = sample(closer_beds, n_draws, replace = TRUE),
   IPD_close_draw = rnorm(n_draws, IPD_close, IPD_close_se)
 ) %>%
   mutate(
@@ -192,8 +213,7 @@ mc_summary <- tibble(
                     mean(mc_draws$net_ipd > 0, na.rm = TRUE), NA)
 )
 
-cat("    Monte Carlo summary:\n")
-print(mc_summary)
+## mc_summary is written to results/diagnostics/psa_summary.csv below.
 
 
 # 5. Outputs ----------------------------------------------------------------
@@ -206,7 +226,6 @@ county_pop <- read_csv("data/input/CenPop2010_Mean_CO.txt",
   mutate(fips = paste0(STATEFP, COUNTYFP)) %>%
   filter(!STATEFP %in% c("72", "78", "66", "60", "69"))
 
-cat("    Computing county-level CAH exposure ...\n")
 
 county_nearest <- county_pop %>%
   select(fips, county_lat = LATITUDE, county_lon = LONGITUDE) %>%
@@ -283,7 +302,6 @@ p_map <- ggplot(map_dat) +
   )
 
 ggsave("results/map-cah-exposure.png", p_map, width = 10, height = 6, dpi = 300)
-cat("    Saved results/map-cah-exposure.png\n")
 
 ## 5b. Monte Carlo figure: net beds per hospital
 p_mc_beds <- ggplot(mc_draws, aes(x = net_beds)) +
@@ -303,7 +321,6 @@ p_mc_beds <- ggplot(mc_draws, aes(x = net_beds)) +
   theme(panel.grid.minor = element_blank())
 
 ggsave("results/psa-net-beds.png", p_mc_beds, width = 5.5, height = 4.5, dpi = 300)
-cat("    Saved results/psa-net-beds.png\n")
 
 ## 5b2. Monte Carlo figure: net inpatient days per hospital
 p_mc_ipd <- ggplot(mc_draws, aes(x = net_ipd)) +
@@ -323,7 +340,6 @@ p_mc_ipd <- ggplot(mc_draws, aes(x = net_ipd)) +
   theme(panel.grid.minor = element_blank())
 
 ggsave("results/psa-net-ipd.png", p_mc_ipd, width = 4, height = 3.5, dpi = 300)
-cat("    Saved results/psa-net-ipd.png\n")
 
 ## 5c. Diagnostic CSVs
 write_csv(mc_summary, "results/diagnostics/psa_summary.csv")
@@ -335,4 +351,3 @@ write_csv(
   "results/diagnostics/cah_converter_distances.csv"
 )
 
-cat("  [access-health] Done.\n")

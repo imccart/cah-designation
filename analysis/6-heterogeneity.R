@@ -74,11 +74,8 @@ treated_base <- hosp_base %>%
 med_distance <- median(treated_base$distance_base, na.rm = TRUE)
 med_margin   <- median(treated_base$margin_base, na.rm = TRUE)
 
-cat(sprintf("  [het] Median distance (treated): %.1f miles\n", med_distance))
-cat(sprintf("  [het] Median pre-treatment margin (treated): %.3f\n", med_margin))
-cat(sprintf("  [het] Hospitals with margin_base: %d treated, %d total\n",
-            sum(!is.na(treated_base$margin_base)),
-            sum(!is.na(hosp_base$margin_base))))
+## med_distance and med_margin define the isolation and pre-treatment margin
+## splits below. Neither is reported in the paper.
 
 
 # Heterogeneity dimensions ------------------------------------------------
@@ -171,13 +168,10 @@ het.results <- tibble(
 
 for (dim_name in names(het_dims)) {
   dim <- het_dims[[dim_name]]
-  cat(sprintf("\n=== Heterogeneity: %s ===\n", dim$label))
 
   for (grp_name in names(dim$groups)) {
     grp_filter <- dim$groups[[grp_name]]
     stack_sub  <- grp_filter(stack.elig)
-    cat(sprintf("  [%s] %s: %d unique hospitals\n",
-                dim_name, grp_name, length(unique(stack_sub$ID))))
 
     for (oname in names(het_outcome_map)) {
       # Skip self-referential: estimating system outcome split by system dimension
@@ -200,7 +194,7 @@ for (dim_name in names(het_dims)) {
           n_cohorts = as.integer(result$n_cohorts)
         ))
       } else {
-        cat(sprintf("    SDID failed: %s / %s / %s\n", dim_name, grp_name, oname))
+        message(sprintf("heterogeneity: SDID failed for %s / %s / %s", dim_name, grp_name, oname))
       }
     }
   }
@@ -316,63 +310,45 @@ for (dim_name in unique(het.results$dimension)) {
 }
 
 # Combined forest plot (all dimensions side-by-side) -----------------------
+# Each column is a stack of per-outcome panels. An outcome that cannot be
+# estimated for a dimension (system membership as an outcome when splitting on
+# system membership) gets a blank spacer, so rows stay aligned across columns
+# without drawing an empty panel.
 
-make_het_panel <- function(dim_name, show_strip = FALSE) {
-  dim_dat <- het.results %>%
-    filter(dimension == dim_name) %>%
-    mutate(outcome_label = factor(het_forest_labels[outcome],
-                                  levels = het_forest_labels[outcome_order]))
-
-  # Pad missing outcome levels with NA rows so all panels have the same facets
-  all_levels <- levels(dim_dat$outcome_label)
-  present    <- unique(as.character(dim_dat$outcome_label))
-  missing    <- setdiff(all_levels, present)
-  if (length(missing) > 0) {
-    grps <- unique(dim_dat$subgroup)
-    pad  <- expand.grid(subgroup = grps, outcome_label = missing,
-                        stringsAsFactors = FALSE) %>%
-      mutate(outcome_label = factor(outcome_label, levels = all_levels))
-    dim_dat <- bind_rows(dim_dat, pad)
-  }
-
-  # Mark which facets are padding (no real data)
-  dim_dat <- dim_dat %>%
-    mutate(is_padding = outcome_label %in% missing)
-
-  p <- ggplot(dim_dat, aes(x = att, y = subgroup, shape = subgroup)) +
-    geom_vline(data = ~ filter(.x, !is_padding),
-               aes(xintercept = 0), linewidth = 0.3, linetype = "dashed", color = "gray40") +
-    geom_pointrange(aes(xmin = ci_low, xmax = ci_high), size = 0.3, linewidth = 0.3) +
-    facet_wrap(~ outcome_label, ncol = 1, scales = "free_x",
-               strip.position = "left") +
-    labs(x = NULL, y = NULL, shape = NULL, title = dim_name) +
-    theme_bw(base_size = 9) +
+make_het_cell <- function(dim_name, olab, first_col, first_row) {
+  d <- het.results %>%
+    mutate(outcome_label = unname(het_forest_labels[outcome])) %>%
+    filter(dimension == dim_name, outcome_label == olab)
+  if (nrow(d) == 0) return(plot_spacer())
+  ggplot(d, aes(x = att, y = subgroup, shape = subgroup)) +
+    geom_vline(xintercept = 0, linewidth = 0.3, linetype = "dashed", color = "gray40") +
+    geom_pointrange(aes(xmin = ci_low, xmax = ci_high), size = 0.35, linewidth = 0.35) +
+    labs(x = NULL, y = if (first_col) olab else NULL, shape = NULL,
+         title = if (first_row) dim_name else NULL) +
+    theme_bw(base_size = 12) +
     theme(
-      strip.background   = element_blank(),
-      strip.placement    = "outside",
-      strip.text.y.left  = if (show_strip)
-        element_text(angle = 0, hjust = 1, size = 8, lineheight = 0.9)
-        else element_blank(),
-      axis.text.y        = element_text(size = 7),
+      axis.title.y       = element_text(angle = 0, hjust = 1, vjust = 0.5, size = 11, lineheight = 0.9),
+      axis.text.y        = element_text(size = 10),
+      axis.text.x        = element_text(size = 9),
       axis.ticks.y       = element_blank(),
       panel.grid.minor   = element_blank(),
       panel.grid.major.y = element_blank(),
       legend.position    = "none",
-      plot.title         = element_text(size = 10, hjust = 0.5, face = "bold"),
+      plot.title         = element_text(size = 11, hjust = 0.5, face = "bold"),
       plot.margin        = margin(2, 4, 2, 2)
     )
-
-  p
 }
 
 dim_names <- unique(het.results$dimension)
-panels <- map(seq_along(dim_names), ~ make_het_panel(dim_names[.x], show_strip = (.x == 1)))
-
-combined <- wrap_plots(panels, nrow = 1)
-n_out <- length(unique(het.results$outcome))
+olabs     <- unname(het_forest_labels[outcome_order])
+columns <- map(seq_along(dim_names), function(j) {
+  cells <- map(seq_along(olabs), ~ make_het_cell(dim_names[j], olabs[.x], first_col = (j == 1), first_row = (.x == 1)))
+  wrap_plots(cells, ncol = 1)
+})
+combined <- wrap_plots(columns, nrow = 1)
+n_out <- length(olabs)
 
 ggsave("results/het-forest-combined.png", combined,
-       width = 14, height = 0.7 * n_out + 1.2, dpi = 300)
+       width = 11, height = 0.85 * n_out + 1.4, dpi = 300)
 
 
-cat("\n  [het] Done. Results in het.results; plots and tables in results/\n")

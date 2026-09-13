@@ -43,7 +43,6 @@ for (oname in names(elig_outcome_map)) {
   file_stub     <- o$stub
   pp            <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [elig] Running %s ...\n", oname))
 
   # -----------------------------------------------------------------------
   # SDID across cohorts
@@ -94,7 +93,7 @@ for (oname in names(elig_outcome_map)) {
   atts_all  <- bind_rows(map(out, "att_se"))
 
   if (nrow(atts_all) == 0) {
-    cat(sprintf("    [elig] SDID failed for all cohorts on %s, skipping\n", oname))
+    message(sprintf("elig: %s skipped, SDID failed for every cohort", oname))
     next
   }
 
@@ -160,44 +159,19 @@ for (oname in names(elig_outcome_map)) {
   # -----------------------------------------------------------------------
   # Callaway and Sant'Anna
   # -----------------------------------------------------------------------
-  cs.dat <- est.dat %>%
-    group_by(ID) %>%
-    mutate(min_bedsize  = min(BDTOT, na.rm = TRUE),
-           max_distance = max(distance, na.rm = TRUE)) %>%
-    ungroup() %>%
-    filter(min_bedsize <= bed.cut) %>%
-    mutate(y  = !!outcome_sym,
-           ID2 = as.numeric(factor(ID)),
-           treat_group = ifelse(!is.na(eff_year), eff_year, 0)) %>%
-    filter(!is.na(y), !is.na(year), !is.na(BDTOT), !is.na(distance),
-           treat_group == 0 | (treat_group >= 1999 & treat_group <= 2005)) %>%
-    select(ID, ID2, MSTATE, treat_group, year, y, BDTOT, distance,
-           own_type, teach_major, min_bedsize, max_distance, ever_rural) %>%
-    mutate(own_type = as.factor(own_type))
+  cs.out <- cs_att(est.dat, oname, elig.cohorts, bed.cut,
+                   min.es = -pp, max.es = 5)
+  if (is.null(cs.out)) stop(sprintf("CS failed for every cohort on %s", oname))
 
-  csa.raw <- att_gt(yname = "y",
-                    gname = "treat_group",
-                    idname = "ID2",
-                    tname = "year",
-                    control_group = "notyettreated",
-                    panel = TRUE,
-                    allow_unbalanced_panel = TRUE,
-                    data = cs.dat,
-                    xformla = ~min_bedsize + max_distance + ever_rural,
-                    base_period = "universal",
-                    est_method = "ipw")
-  csa.att <- aggte(csa.raw, type = "simple", na.rm = TRUE)
-  csa.es  <- aggte(csa.raw, type = "dynamic", na.rm = TRUE,
-                    min_e = -pp, max_e = 5)
-
-  cs_att_val <- csa.att$overall.att
-  cs_se_val  <- csa.att$overall.se
+  cs_att_val <- cs.out$att
+  cs_se_val  <- cs.out$se
 
   ## CS event-study plot
-  est.cs <- tibble(
-    event_time = csa.es$egt,
-    estimate   = csa.es$att,
-    se         = csa.es$se
+  est.cs <- cs.out$es %>%
+    transmute(
+      event_time = event_time,
+      estimate   = estimate,
+      se         = se
   ) %>%
     mutate(
       conf.low  = if_else(event_time != -1, estimate - 1.96 * se, 0),
@@ -285,4 +259,3 @@ for (c in sort(unique(elig.cohort.results$cohort))) {
 }
 writeLines(cohort_tex_lines, "results/att_elig_cohort.tex")
 
-cat("\n  [elig] Done. Results written to results/att_elig_overall.tex and att_elig_cohort.tex\n")

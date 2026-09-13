@@ -24,7 +24,6 @@ for (oname in names(state_outcome_map)) {
   file_stub     <- o$stub
   cohorts       <- o$cohorts
 
-  cat(sprintf("  [state-dd] Running %s ...\n", oname))
 
   # Synthetic DD ---------------------------------------------------------
 
@@ -200,13 +199,24 @@ for (oname in names(state_outcome_map)) {
   min.es <- -5
   max.es <- 5
 
-  denom_cs <- state.dat %>%
-    filter(year < state_treat_year,
-           state_treat_year %in% cohorts) %>%
-    summarise(mean_hosp = mean(hospitals, na.rm = TRUE)) %>%
-    pull(mean_hosp)
+  ## Same denominator basis as the SDID estimates: the cohort-specific
+  ## pre-period hospital counts, weighted by treated states per cohort.
+  cs_weights <- stack.state %>%
+    filter(treated == 1, stack_group %in% cohorts) %>%
+    distinct(stack_group, MSTATE) %>%
+    count(stack_group, name = "n_tr")
+
+  denom_cs <- denom.lag %>%
+    filter(stack_group %in% cohorts) %>%
+    inner_join(cs_weights, by = "stack_group") %>%
+    summarise(d = weighted.mean(mean_hosp, n_tr)) %>%
+    pull(d)
 
   scale_cs <- 100 / denom_cs
+
+  ## att_gt draws a multiplier bootstrap for its confidence bands. Seeding here
+  ## keeps the intervals identical regardless of what ran earlier.
+  set.seed(1234)
 
   csa.raw <- att_gt(yname=outcome_var,
                      gname="state_treat_year",
@@ -221,9 +231,7 @@ for (oname in names(state_outcome_map)) {
                      clustervars="state",
                      bstrap=TRUE)
   csa.att <- aggte(csa.raw, type="simple", na.rm=TRUE)
-  summary(csa.att)
   csa.es <- aggte(csa.raw, type="dynamic", na.rm=TRUE, min_e=-5, max_e=5)
-  summary(csa.es)
 
   est.cs <- tibble(
     event_time = csa.es$egt,
@@ -256,8 +264,8 @@ for (oname in names(state_outcome_map)) {
          width = 6.5, height = 4.25, dpi = 300, scale=1.5)
 
   # Collect results ----------------------------------------------------------
-  cs_att_val <- csa.att$overall.att * scale_cs
-  cs_se_val  <- csa.att$overall.se * scale_cs
+  cs_att_val <- csa.es$overall.att * scale_cs
+  cs_se_val  <- csa.es$overall.se * scale_cs
 
   state.results.table <- bind_rows(state.results.table, tibble(
     outcome      = outcome_label,
@@ -271,4 +279,3 @@ for (oname in names(state_outcome_map)) {
   ))
 }
 
-cat("  [state-dd] Done. Results in state.results.table\n")

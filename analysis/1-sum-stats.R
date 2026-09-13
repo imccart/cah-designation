@@ -22,7 +22,9 @@ ggsave("results/desc-hosp-types.png", fig.hosp.type, width = 6.5, height = 4.25,
 
 ## Treatment timing --------------------------------------------------------
 
-panel.cah <- panelview(1~treat_post, data=state.dat %>% mutate(MSTATE=as.character(MSTATE)),
+## panelView 1.3.1 needs a real column on the left of the formula (a literal
+## `1 ~ treat_post` drops the treatment indicator), so `one` is a constant.
+panel.cah <- panelview(one~treat_post, data=state.dat %>% mutate(MSTATE=as.character(MSTATE), one=1),
                       index=c("MSTATE","year"), legendOff=TRUE,
           theme.bw=TRUE, by.timing=TRUE, xlab="Year", ylab="State",
           main="", color=c("white","gray"), axis.lab.angle=45)

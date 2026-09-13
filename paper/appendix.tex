@@ -43,7 +43,7 @@
 
 \vspace{1cm}
 
-This appendix provides supplementary material for the main text. Section~\ref{sec:app-financial} details the construction of our hospital-level financial measures. Section~\ref{sec:app-diagnostics} reports diagnostics for the synthetic difference-in-differences (SDID) estimator, including sample attrition from balanced-panel requirements, pre-trend tests, and synthetic control weight concentration. Section~\ref{sec:app-sample} examines sensitivity to the estimation sample, including the control group construction, pre-period length, bed size cutoff, and the eligibility-restricted design. Section~\ref{sec:app-alt} presents results from alternative estimators (Callaway--Sant'Anna and interactive fixed effects). Section~\ref{sec:app-perm} reports permutation inference results. Section~\ref{sec:app-anticipation} examines the sensitivity of capacity estimates to anticipatory downsizing.
+This appendix provides supplementary material for the main text. Section~\ref{sec:app-financial} details the construction of our hospital-level financial measures. Section~\ref{sec:app-diagnostics} reports diagnostics for the synthetic difference-in-differences (SDID) estimator, including sample attrition from balanced-panel requirements, pre-trend tests, and synthetic control weight concentration. Section~\ref{sec:app-sample} examines sensitivity to the estimation sample, including the control group construction, pre-period length, bed size cutoff, and the eligibility-restricted design. Section~\ref{sec:app-alt} presents results from alternative estimators (Callaway--Sant'Anna and interactive fixed effects). Section~\ref{sec:app-perm} reports permutation inference results. Section~\ref{sec:app-adoption} examines what predicts a state's adoption year, Section~\ref{sec:app-populations} compares converting hospitals with hospitals that closed and reports bed reductions by initial size, and Section~\ref{sec:app-anticipation} reports the eligibility-restricted version of the pre-designation restructuring analysis in the main text.
 
 
 %%% ===================================================================
@@ -53,13 +53,13 @@ This appendix provides supplementary material for the main text. Section~\ref{se
 \section{Financial Measure Construction}
 \label{sec:app-financial}
 
-We construct six financial measures (operating margin, current ratio, net patient revenue per bed, total operating expenses per bed, net fixed assets per bed, and capital expenditures per bed) by combining data from the Healthcare Cost Report Information System (HCRIS) and IRS Form 990 filings. HCRIS is the primary source for all measures; Form 990 serves as a secondary source when HCRIS data are unavailable for a given hospital-year. This section describes the construction of each measure, the source hierarchy, and the post-processing steps applied to the combined series.
+We construct six financial measures (operating margin, current ratio, net patient revenue per bed, total operating expenses per bed, net fixed assets per bed, and capital expenditures per bed) from the Healthcare Cost Report Information System (HCRIS). This section describes the crosswalk that links converting hospitals to their pre-designation cost reports, the measure definitions, and the post-processing steps.
 
 \subsection{Data Sources}
 
-\paragraph{\textit{HCRIS.}} Medicare-certified hospitals file annual cost reports, from which we extract net patient revenue, total operating expenses, current assets, current liabilities, net fixed assets (land, buildings, and equipment net of accumulated depreciation), and the components of accumulated depreciation. These fields are drawn from Worksheet G (balance sheet) and Worksheet G-3 (income statement) of the cost report. When a hospital files multiple non-overlapping reports in a single fiscal year, we sum the relevant fields across reports.
+\paragraph{\textit{HCRIS.}} Medicare-certified hospitals file annual cost reports, from which we extract net patient revenue, total operating expenses, current assets, current liabilities, net fixed assets (land, buildings, and equipment net of accumulated depreciation), and the components of accumulated depreciation. These fields are drawn from Worksheet G (balance sheet) and Worksheet G-3 (income statement) of the cost report. When a hospital files multiple non-overlapping reports in a single fiscal year, we sum the relevant fields across reports. CMS publishes cost report data beginning with fiscal year 1996, so our financial series begins in 1996.
 
-\paragraph{\textit{Form 990.}} Nonprofit hospitals file IRS Form 990s, from which we extract total revenue, total expenses, total assets, total liabilities, net fixed assets, and depreciation expense. Each AHA hospital identifier may link to up to three Employer Identification Numbers (EINs) through our fuzzy matching procedure (see the data documentation). When multiple EINs are available, we use the first EIN with non-missing data for that year. In practice, HCRIS provides the primary financial data for the vast majority of hospital-years in our estimation sample. The Form 990 fallback primarily fills gaps for nonprofit hospitals in years before HCRIS coverage became widespread, affecting a small share of observations.
+\paragraph{\textit{Linking converters to their pre-designation cost reports.}} Cost reports are identified by Medicare provider number, and a hospital receives a new number when it is designated as a CAH. We therefore match each converter's pre-designation years to cost reports filed under non-CAH provider numbers in the same state, using name similarity within zip code or city. We drop earlier numbers claimed by two converters, numbers that belong to another hospital, and numbers whose reports continue for more than two years after designation. Of converters' pre-designation hospital-years from 1996 onward, 87 percent have a cost report, compared with 15 percent under a time-invariant crosswalk that assigns each hospital one provider number for all years.
 
 \subsection{Measure Definitions}
 
@@ -67,35 +67,30 @@ We construct six financial measures (operating margin, current ratio, net patien
 $$
 \text{margin}_{\text{HCRIS}} = \frac{\text{net patient revenue} - \text{total operating expenses}}{\text{net patient revenue}}.
 $$
-When HCRIS data are unavailable, we substitute the Form 990 analogue,
-$$
-\text{margin}_{990} = \frac{\text{total revenue} - \text{total expenses}}{\text{total revenue}},
-$$
-restricted to observations with $\text{margin}_{990} \in (-1, 1)$. The two definitions differ in scope: the HCRIS measure reflects patient-care operations, while the Form 990 measure includes all organizational revenue and expenses.
 
 \paragraph{\textit{Current ratio.}} From HCRIS, the current ratio is defined as
 $$
 \text{current ratio}_{\text{HCRIS}} = \frac{\text{current assets}}{\text{current liabilities}},
 $$
-where both fields are drawn from the balance sheet (Worksheet G). When HCRIS data are unavailable, we substitute the Form 990 analogue, which uses total assets divided by total liabilities. Because the Form 990 version includes long-term items, it will tend to exceed the HCRIS current ratio for the same hospital; the HCRIS measure is therefore preferred when available.
+where both fields are drawn from the balance sheet (Worksheet G).
 
-\paragraph{\textit{Net fixed assets per bed.}} Net fixed assets are taken directly from the HCRIS balance sheet when available, with Form 990 net fixed assets as a fallback. We normalize by each hospital's pre-period mean bed count, computed as the average of total staffed beds (AHA variable \texttt{BDTOT}) across all years after 1995 and prior to CAH designation (or across all post-1995 years for hospitals that never receive designation). We deflate to constant 2010 dollars using the annual CPI-U and express the result in millions of dollars per bed:
+\paragraph{\textit{Net fixed assets per bed.}} Net fixed assets are taken directly from the HCRIS balance sheet. We normalize by each hospital's pre-period mean bed count, computed as the average of total staffed beds (AHA variable \texttt{BDTOT}) across all years after 1995 and prior to CAH designation (or across all post-1995 years for hospitals that never receive designation). We deflate to constant 2010 dollars using the annual CPI-U and express the result in millions of dollars per bed:
 $$
 \text{net fixed assets per bed} = \frac{\text{net fixed assets}}{10^6 \times \bar{B}_{\text{pre}} \times \text{CPI deflator}},
 $$
 where $\bar{B}_{\text{pre}}$ is the pre-period mean bed count and the CPI deflator is the ratio of the current-year CPI-U index to the 2010 index.
 
-\paragraph{\textit{Capital expenditures per bed.}} We approximate capital expenditures as the year-to-year change in gross fixed assets. From HCRIS, gross fixed assets are computed as net fixed assets plus accumulated depreciation; capital expenditure is then the first difference of this series within each hospital. When HCRIS data are unavailable, we use the change in net fixed assets plus depreciation expense as the Form 990 analogue. As with net fixed assets, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in units of \$10,000 per bed:
+\paragraph{\textit{Capital expenditures per bed.}} We approximate capital expenditures as the year-to-year change in gross fixed assets. From HCRIS, gross fixed assets are computed as net fixed assets plus accumulated depreciation; capital expenditure is then the first difference of this series within each hospital. As with net fixed assets, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in units of \$10,000 per bed:
 $$
 \text{capex per bed} = \frac{\Delta\text{gross fixed assets}}{10^4 \times \bar{B}_{\text{pre}} \times \text{CPI deflator}}.
 $$
 
-\paragraph{\textit{Net patient revenue per bed.}} Net patient revenue is taken from the HCRIS income statement when available. When HCRIS data are unavailable, we substitute total revenue from the Form 990. We normalize by each hospital's pre-period mean bed count and deflate to constant 2010 dollars using the CPI-U, expressed in thousands of dollars per bed:
+\paragraph{\textit{Net patient revenue per bed.}} Net patient revenue is taken from the HCRIS income statement. We normalize by each hospital's pre-period mean bed count and deflate to constant 2010 dollars using the CPI-U, expressed in thousands of dollars per bed:
 $$
 \text{net patient revenue per bed} = \frac{\text{net patient revenue}}{10^3 \times \bar{B}_{\text{pre}} \times \text{CPI deflator}}.
 $$
 
-\paragraph{\textit{Total operating expenses per bed.}} Total operating expenses are taken from the HCRIS income statement when available, with total expenses from the Form 990 as a fallback. As with revenue, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in thousands of dollars per bed:
+\paragraph{\textit{Total operating expenses per bed.}} Total operating expenses are taken from the HCRIS income statement. As with revenue, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in thousands of dollars per bed:
 $$
 \text{operating expenses per bed} = \frac{\text{total operating expenses}}{10^3 \times \bar{B}_{\text{pre}} \times \text{CPI deflator}}.
 $$
@@ -104,9 +99,9 @@ $$
 
 \subsection{Post-Processing}
 
-\paragraph{\textit{Winsorization.}} We winsorize all six financial measures at the 5th and 95th percentiles within each year-by-ever-CAH cell. Winsorization is applied after combining HCRIS and Form 990 sources but before CPI deflation and per-bed normalization of the capital and revenue/expense measures. This reduces the influence of extreme values driven by reporting anomalies while preserving cross-sectional and temporal variation within plausible ranges.
+\paragraph{\textit{Winsorization.}} We winsorize all six financial measures at the 5th and 95th percentiles within each year-by-ever-CAH cell. Winsorization is applied before CPI deflation and per-bed normalization of the capital and revenue/expense measures. This reduces the influence of extreme values driven by reporting anomalies while preserving cross-sectional and temporal variation within plausible ranges.
 
-\paragraph{\textit{Interpolation.}} After winsorization, we linearly interpolate missing values within each hospital's time series using observed year as the time index. Interpolation fills isolated gaps (e.g., a single missing cost report year) while leaving leading and trailing missingness unchanged. The same interpolation procedure is applied to the capacity and staffing variables (total beds, OB beds, FTE RNs, and inpatient days per bed).
+\paragraph{\textit{Interpolation.}} After winsorization, we linearly interpolate missing values within each hospital's time series using observed year as the time index. Interpolation fills isolated gaps (e.g., a single missing cost report year) while leaving leading and trailing missingness unchanged. The same winsorization and interpolation procedures are applied to the capacity and staffing variables (total beds, OB beds, and FTE RNs), and inpatient days per bed is interpolated in the same way after being capped at 85 percent occupancy.
 
 
 %%% ===================================================================
@@ -118,11 +113,15 @@ $$
 
 Our primary estimates use the synthetic difference-in-differences (SDID) estimator, which requires a balanced panel of units observed in every period of the event window \citep{arkhangelsky2021}. This requirement can reduce sample sizes relative to estimators that accommodate unbalanced panels, such as the Callaway and Sant'Anna (CS) estimator \citep{callaway2021}. Similarly, the SDID estimator assigns nonnegative weights to control units to match the treated group's pre-period trajectory. If these weights are highly concentrated on a small number of controls, the resulting estimates may be sensitive to idiosyncratic variation in those units. We present three diagnostics below to assess these concerns.
 
-The FTE RN outcome shows evidence of differential pre-trends in some cohorts (Table~\ref{tab:diag-pretrend}). This is consistent with treated hospitals already experiencing staffing declines before formal designation, likely reflecting anticipatory restructuring to meet eligibility requirements. As shown in Section~\ref{sec:app-anticipation}, redefining treatment to begin one year earlier eliminates these pre-trend concerns and strengthens the estimated effects.
+Table~\ref{tab:diag-sample} reports, for each outcome and cohort, the number of treated and control units in the SDID balanced panel and in the full sample available to the CS estimator, together with the share of units lost to balancing. Attrition is largest in the 1999 cohort of the financial outcomes, whose event window reaches back to the first years of the cost report data. Table~\ref{tab:diag-weights} reports the number of control units, the largest weight on any single control, the share of weight on the five largest controls, and the Herfindahl index of the weights. For the hospital-level outcomes, the largest weight on any control is at most 0.06 and the five largest controls never carry more than 27 percent of the weight, so no estimate depends on a handful of controls. The state-level outcomes have far fewer controls, 5 to 21 states depending on the cohort, so their weights are necessarily more concentrated.
 
-The revenue and expense decomposition outcomes also exhibit differential pre-trends. Total operating expenses per bed shows statistically significant trends in all three cohorts ($p < 0.002$ in each case), while net patient revenue per bed flags in the 1999 cohort ($p = 0.003$) and marginally in 2001 ($p = 0.06$). However, as shown in Section~\ref{sec:app-sample}, SDID point estimates for these outcomes are stable across pre-period lengths of 2--5 years, suggesting the estimates are not mechanically driven by differential trends.
+Whether converters and the control pool were on different paths before designation indicates how much the SDID weights have to correct and which outcomes show restructuring before designation. Table~\ref{tab:diag-pretrend} therefore reports pre-trend tests on the unweighted balanced panel, regressing each outcome on the interaction of event time and treatment status over pre-treatment observations. The fit of the synthetic control itself is visible in the treated and synthetic paths in the main-text figures.
 
-Figures~\ref{fig:pretrend-financial}--\ref{fig:pretrend-org} plot mean outcomes for treated and control groups by event time, averaged across cohorts. The vertical dashed line marks the last pre-treatment period.
+The FTE RN outcome shows evidence of differential pre-trends in the 1999 and 2000 cohorts (Table~\ref{tab:diag-pretrend}). This is consistent with treated hospitals already reducing staffing before formal designation, reflecting the restructuring required to meet eligibility requirements, which the main text examines directly by dating treatment one year earlier.
+
+Among the financial outcomes, operating margin and the current ratio show statistically significant differential pre-trends in the 2000 and 2001 cohorts, total operating expenses per bed in the 1999 cohort, and net fixed assets in the 2000 cohort, while net patient revenue per bed shows none. The margin and expense pre-trends are consistent with the same pre-designation restructuring, in which converters' margins decline in the two years before designation as they shed scale, a pattern the main text documents directly. As shown in Section~\ref{sec:app-sample}, SDID point estimates for the financial outcomes are stable across pre-period lengths of 2--5 years.
+
+The main text plots mean outcomes for treated and control groups by event time, averaged across cohorts, for each outcome.
 
 
 %%% ===================================================================
@@ -137,10 +136,10 @@ Our results may be sensitive to how the estimation sample is defined. In this se
 \paragraph{\textit{State-level adoption lags.}}
 Our main specification constructs the not-yet-treated control group by requiring that a state's first CAH designation occur strictly after the cohort year. Formally, for a treated cohort converting in year $t$, a not-yet-treated hospital enters the control pool only if its state's first CAH designation year satisfies $s > t + \delta$, where $\delta = 0$ in the baseline. Increasing $\delta$ strengthens the exclusion by removing states whose CAH programs begin shortly after the cohort year, reducing the risk that anticipation effects or early program spillovers contaminate the control group. The cost is a smaller control pool, which reduces precision and may alter the composition of comparison units.
 
-Figure~\ref{fig:statecut-sensitivity} presents SDID estimates for all outcomes at $\delta = 1$ and $\delta = 2$ alongside the baseline ($\delta = 0$). We do not report $\delta = 3$ because the earliest cohort (1999) can only draw controls from states adopting in 2003 or later, leaving too few comparison units for reliable estimation. The shaded band in each panel spans the baseline 95\% confidence interval, and the dashed vertical line marks the baseline point estimate. Across all outcomes, the sensitivity estimates remain qualitatively similar to the baseline, showing capacity reductions, system membership increases, and insignificant margin effects at both lag values. Point estimates generally fall within or near the baseline confidence band, confirming that our findings are not driven by contamination from states that adopt CAH programs shortly after the cohort year.
+Figure~\ref{fig:statecut-sensitivity} presents SDID estimates for all outcomes at $\delta = 1$ and $\delta = 2$ alongside the baseline ($\delta = 0$). We do not report $\delta = 3$ because the earliest cohort (1999) can only draw controls from states adopting in 2003 or later, leaving too few comparison units for reliable estimation. The shaded band in each panel spans the baseline 95\% confidence interval, and the dashed vertical line marks the baseline point estimate. Across all outcomes, the sensitivity estimates remain qualitatively similar to the baseline, showing capacity reductions, system membership increases, and positive margin effects at both lag values. Point estimates generally fall within or near the baseline confidence band, confirming that our findings are not driven by contamination from states that adopt CAH programs shortly after the cohort year.
 
 \paragraph{\textit{Post-period event window.}}
-Our baseline uses a 5-year post-period, meaning control hospitals must not convert to CAH within 5 years of the cohort year. This requirement mechanically excludes hospitals that convert soon after their state opens the CAH program, selecting late- or never-converters into the control pool. If these hospitals differ systematically from treated hospitals (e.g., in financial health, management capacity, or payer mix), the exclusion could bias the comparison. Shortening the post-period to 4, 3, or 2 years relaxes this restriction, allowing hospitals that took up CAH relatively quickly after state implementation to serve as controls and producing a control pool that is more compositionally similar to treated hospitals. Figure~\ref{fig:postperiod-sensitivity} reports SDID estimates at post-period lengths of 5, 4, 3, and 2 years. The results are broadly stable across all post-period lengths, with capacity reductions, closure effects, and insignificant margin effects persisting even at the most restrictive 2-year window.
+Our baseline uses a 5-year post-period, meaning control hospitals must not convert to CAH within 5 years of the cohort year. This requirement mechanically excludes hospitals that convert soon after their state opens the CAH program, selecting late- or never-converters into the control pool. If these hospitals differ systematically from treated hospitals (e.g., in financial health, management capacity, or payer mix), the exclusion could bias the comparison. Shortening the post-period to 4, 3, or 2 years relaxes this restriction, allowing hospitals that took up CAH relatively quickly after state implementation to serve as controls and producing a control pool that is more compositionally similar to treated hospitals. Figure~\ref{fig:postperiod-sensitivity} reports SDID estimates at post-period lengths of 5, 4, 3, and 2 years. The results are broadly stable across all post-period lengths, with capacity reductions, closure effects, and positive margin effects persisting even at the shortest 2-year window.
 
 \paragraph{\textit{Excluding immediate adopters.}}
 Hospitals that convert to CAH in the same year their state first implements the program may represent a selected group of particularly proactive or financially distressed facilities. To assess whether these ``immediate adopters'' drive our results, we re-estimate the main specification after reclassifying them as untreated. In our sample, 121 of 1,466 treated hospitals (8.3\%) converted in their state's first year of CAH availability. Figure~\ref{fig:noimmediate-sensitivity} shows that dropping these hospitals has minimal effect on the estimates, with point estimates for all outcomes remaining close to the baseline.
@@ -152,13 +151,11 @@ The control pool in our main specification includes hospitals from states that n
 We also examine sensitivity to the bed size cutoff used to define the sample of plausibly CAH-eligible hospitals. Our baseline restricts to hospitals with 50 or fewer beds, allowing for flexible enforcement of CAH eligibility criteria as well as a buffer for hospitals that downsize to qualify. Figure~\ref{fig:bedcut-sensitivity} reports SDID estimates using cutoffs of 25 and 75 beds. Tightening the cutoff to 25 beds restricts the sample to hospitals already at or below the statutory limit, while relaxing it to 75 beds includes larger hospitals that may be less comparable to CAH converters. State-level outcomes (closures and mergers) are excluded because they do not depend on the hospital-level bed size filter. Across all hospital-level outcomes, the estimates are broadly consistent with the baseline, confirming that the results are not artifacts of the particular bed size threshold.
 
 \paragraph{\textit{Pre-period length for financial outcomes.}}
-Financial outcomes rely on data from HCRIS and IRS Form 990 filings, which have sparser pre-treatment coverage than the AHA survey data used for capacity and staffing outcomes. In particular, HCRIS coverage ramps up gradually through the late 1990s, so that requiring longer pre-periods mechanically reduces the balanced panel. To assess whether our SDID estimates for financial outcomes are sensitive to the choice of pre-period length, we re-estimate each financial outcome using pre-periods of 2, 3, 4, and 5 years. The baseline specification in the main text uses 5 pre-periods.
+Our financial series begins in 1996, so the baseline specification uses a three-year pre-period for financial outcomes in order to give every cohort a full pre-period. A longer pre-period does not add years for the earliest cohorts, because the balanced panel is formed only over the years with data, but it does change which hospitals enter the panel. With a five-year pre-period, for example, the treated sample falls from 272 to 143 hospitals. To assess sensitivity to this choice, we re-estimate each financial outcome using pre-periods of 2, 3, 4, and 5 years.
 
-Table~\ref{tab:preperiod-financial} reports the results. Operating margin estimates are consistently near zero across all pre-period lengths ($-0.010$ to $0.004$), confirming that the margin result is not an artifact of any particular pre-period choice. Net fixed assets per bed is similarly stable, ranging from $-0.099$ to $-0.072$. Current ratio estimates attenuate from $-0.709$ (pre-period~$=5$) to $-0.418$ (pre-period~$=2$), losing statistical significance at the shortest pre-period, but remaining negative throughout.
+Table~\ref{tab:preperiod-financial} reports the results. Operating margin estimates range from 0.033 to 0.040 across pre-period lengths and are statistically significant at each. Net fixed assets per bed is close to zero throughout, and capital expenditures per bed is positive but imprecise. Current ratio estimates range from $-0.371$ (pre-period~$=5$) to $-0.206$ (pre-period~$=2$), and are significant only at the longest pre-period.
 
-The decomposition outcomes (net patient revenue per bed and total operating expenses per bed) remain stable across pre-period lengths. Revenue estimates range from $-200$ to $-219$ thousand 2010 dollars per bed, and expense estimates range from $-177$ to $-208$. The near-identical co-movement of revenue and expenses persists at every pre-period length, reinforcing the proportional contraction interpretation. Capital expenditures per bed remain uninformative at all pre-period lengths.
-
-As the pre-period shortens, the treated sample grows from 34 hospitals (pre-period~$=5$) to 43 (pre-period~$=2$), and the control pool expands from 139 to 319. The stability of point estimates across this range of sample sizes provides additional reassurance that the results are not driven by a particular subset of hospitals that happen to have unusually long financial histories.
+Net patient revenue per bed ranges from $-9.5$ to $-20.7$ thousand 2010 dollars per bed across pre-period lengths and operating expenses per bed from $-17.8$ to $-21.6$, with expenses falling by at least as much as revenue at every pre-period length. The stability of the point estimates across pre-period lengths, and across the treated samples they imply, indicates that the results are not driven by a particular subset of hospitals that happen to have unusually long financial histories.
 
 \paragraph{\textit{Eligibility-restricted control group.}}
 Table~\ref{tab:elig-overall} reports overall ATT estimates from the eligibility-restricted design, which uses all non-CAH or not-yet-CAH hospitals with $\leq 50$ beds as controls regardless of state-level CAH adoption timing. This design expands the cohort range to 1999--2005 and substantially increases treated sample sizes relative to the state-timing design. Closures and mergers are omitted because these outcomes are estimated at the state level and require the state-timing design.
@@ -173,35 +170,15 @@ Table~\ref{tab:elig-overall} reports overall ATT estimates from the eligibility-
 
 \subsection{Callaway--Sant'Anna Event-Study Estimates}
 
-This section presents Callaway and Sant'Anna (CS) event-study estimates for all outcomes, complementing the SDID estimates in the main text. The CS estimator accommodates unbalanced panels and traces dynamic treatment effects over event time, a useful complement to SDID when balanced-panel requirements induce sample attrition.
-
-Table~\ref{tab:cs-overall} reports CS ATT estimates for all outcomes under the state-timing control group construction used in the main text, using the ``not-yet-treated'' control group specification and aggregating across cohorts via the CS group-time ATT framework. Figures~\ref{fig:cs-financial}--\ref{fig:cs-org} present the corresponding CS event-study estimates. Figures~\ref{fig:elig-cs-financial}--\ref{fig:elig-cs-capacity} present the CS event-study estimates from the eligibility-restricted design.
+This section presents Callaway and Sant'Anna (CS) event-study estimates. Event studies based on the state-timing design are presented in Figures~\ref{fig:cs-financial}--\ref{fig:cs-org}, which underlie the overall CS ATTs presented in the main text. Analogous event-study estimates for the eligibility-restricted design are presented in Figures~\ref{fig:elig-cs-financial}--\ref{fig:elig-cs-capacity}, along with the overall ATTs in Tables~\ref{tab:elig-overall} and~\ref{tab:visits-cs}.
 
 \subsection{Interactive Fixed Effects Estimates}
 
-Our primary SDID estimates require balanced panels, which can substantially reduce sample sizes, particularly for financial outcomes with sparse pre-treatment data coverage. As a robustness check, we estimate treatment effects using the interactive fixed effects (IFE) counterfactual estimator \citep{xu2017}, implemented in the \texttt{fect} package. The IFE estimator models untreated potential outcomes as a function of unit and time fixed effects plus a low-rank factor structure, then imputes counterfactual outcomes for treated observations. Crucially, this approach accommodates unbalanced panels natively, allowing us to retain the full sample of hospitals with available data.
+Our primary SDID estimates require balanced panels, which can substantially reduce sample sizes, particularly for financial outcomes with sparse pre-treatment data coverage. As a robustness check, we estimate treatment effects using the interactive fixed effects (IFE) counterfactual estimator \citep{xu2017}, implemented in the \texttt{fect} package. The IFE estimator models untreated potential outcomes as a function of unit and time fixed effects plus a low-rank factor structure, then imputes counterfactual outcomes for treated observations. This approach accommodates unbalanced panels, so we retain the full sample of hospitals with available data.
 
-We apply the IFE estimator to all financial and operational outcomes using the eligibility-restricted control group construction (cohorts 1999--2005). Financial outcomes use a five-year pre-period matching the SDID specification; operational outcomes (beds, OB beds, FTE RNs, inpatient days per bed, and system membership) also use a five-year pre-period. For each cohort, we select the number of factors (0--5) by leave-one-out cross-validation and compute bootstrap standard errors (150 replications). Cohort-level ATTs are aggregated using the same treated-count weighting as our SDID estimates.
+We apply the IFE estimator to all financial and operational outcomes using the eligibility-restricted control group construction and a five-year pre-period. The operational outcomes use cohorts 1999--2005. The financial outcomes use cohorts 2001--2005, because the estimator requires at least five pre-treatment years and our financial series begins in 1996. For each cohort, we select the number of factors (0--5) by leave-one-out cross-validation and compute bootstrap standard errors (150 replications). Cohort-level ATTs are aggregated using the same treated-count weighting as our SDID estimates.
 
-The IFE estimates are broadly consistent with the main SDID findings (Table~\ref{tab:gsynth}). Capacity outcomes point in the same direction, with beds, OB beds, and FTE RNs all declining, and the magnitudes are comparable. Financial outcomes also align, with operating margin near zero and revenue and expenses both declining, though the IFE revenue and expense estimates are smaller in magnitude and less precise. The IFE estimator retains substantially larger samples (739--985 treated units versus 28--319 for SDID), providing reassurance that the main results are not driven by the balanced-panel restriction.
-
-\subsection{Distributional Effects on the Operating Margin}
-\label{sec:app-quantile}
-
-The SDID and IFE estimates summarize the average effect of designation on operating margins. An average null could in principle mask effects concentrated in part of the distribution, and in particular among the most distressed hospitals in the lower tail, where closure risk is greatest. To examine this, we estimate the effect of designation at each quantile of the operating margin distribution using a recentered influence function (unconditional quantile) difference-in-differences estimator on the eligibility-restricted sample. We use the raw, un-winsorized margin so that the tails of the distribution are not compressed.
-
-Figure~\ref{fig:margin-quantile} plots the estimated effect across quantiles. The effect is small and statistically insignificant at every quantile, and the estimate at the tenth percentile, where closure-relevant distress would appear, is essentially zero ($-0.001$). The absence of a margin effect therefore holds across the entire distribution rather than only at the mean, and is not concentrated among the most distressed hospitals.
-
-\begin{figure}[!h]
-\centering
-\begin{minipage}[h]{6in}
-\caption[Distributional Effect on the Operating Margin]{\textbf{Distributional Effect of CAH Designation on the Operating Margin}\footnote{Recentered influence function (unconditional quantile) difference-in-differences estimates of the effect of CAH designation on the operating margin, plotted at each quantile of the margin distribution on the eligibility-restricted sample. Estimates use the raw, un-winsorized margin. The shaded region is the 95\% confidence interval, with standard errors clustered by hospital.}}
-\centering
-\includegraphics[width=5in]{../results/margin-quantile-did.png}
-\label{fig:margin-quantile}
-\end{minipage}
-\end{figure}
-
+The IFE estimates are broadly consistent with the main SDID findings (Table~\ref{tab:gsynth}). Beds, OB beds, and FTE RNs decline by comparable magnitudes, and operating margin rises by 0.026 (95\% CI $[0.02, 0.03]$). Operating expenses per bed decline as under SDID, but net patient revenue per bed rises under IFE, so the revenue side of the decomposition is less stable across estimators than the margin itself. The current ratio, net fixed assets, and capital expenditures are close to zero. Ultimately, these estimates suggest that the main SDID results for capacity and margins do not depend on the balanced-panel restriction, nor are they obviously biased by any remaining differential trends that a latent factor structure would absorb.
 
 %%% ===================================================================
 %%% SECTION 5: Permutation Inference
@@ -212,21 +189,39 @@ Figure~\ref{fig:margin-quantile} plots the estimated effect across quantiles. Th
 
 The SDID estimator computes standard errors via the jackknife, which may perform poorly with small numbers of treated units. As a nonparametric alternative, we implement a permutation test. For each outcome, we randomly reassign treatment status among units within each cohort's balanced panel, holding the number of treated units fixed, and re-estimate the SDID ATT. We repeat this procedure 500 times to construct a placebo distribution. The permutation $p$-value is the fraction of placebo ATTs at least as extreme in absolute value as the actual estimate.
 
-Figure~\ref{fig:permutation} displays the placebo distributions for all outcomes. The permutation $p$-values are broadly consistent with the jackknife-based confidence intervals from the main analysis. Capacity outcomes (total beds, OB beds, FTE RNs) and the current ratio reject the null at conventional levels, while financial outcomes (margin, revenue, expenses, capital expenditures) and inpatient days per bed do not. This alignment suggests that the jackknife standard errors provide a reasonable basis for inference despite the small number of treated units.
+Figure~\ref{fig:permutation} displays the placebo distributions for all outcomes, and the main text reports the permutation $p$-values alongside the jackknife intervals. The permutation $p$-values are consistent with the jackknife-based confidence intervals. Total beds, OB beds, FTE RNs, operating margin, and operating expenses per bed reject the null at conventional levels under both, while the current ratio, net fixed assets, capital expenditures, and inpatient days per bed do not under either. Net patient revenue per bed and system membership are significant under the jackknife but not under permutation ($p = 0.07$ and $0.09$). This alignment suggests that the jackknife standard errors provide a reasonable basis for inference despite the small number of treated units.
+
+
+%%% ===================================================================
+%%% SECTION: State Adoption Timing
+%%% ===================================================================
+
+\section{State Adoption Timing}
+\label{sec:app-adoption}
+
+To see whether observable characteristics predict a state's adoption cohort, we relate it to the state's hospital market structure, closure rates, operating margins, and unemployment rate over 1990 to 1996. The results are in Table~\ref{tab:adoption-timing}. Across the 35 states in our 1999 to 2001 cohorts, earlier adopters are more rural and have more small hospitals. The 1999 cohort is 37 percent rural against 23 percent for 2000 and 17 percent for 2001, and the correlation between cohort year and the number of hospitals with 50 or fewer beds is $-0.45$. Neither closure rates nor unemployment predicts timing, in levels or in changes, conditional on rurality and the number of small hospitals. Pre-period operating margins are about 2.5 points lower in the 1999 cohort than in the 2001 cohort. We read this pattern as the program reaching its target population first, rather than as states responding to hospital distress or closures.
+
+
+%%% ===================================================================
+%%% SECTION: Which Hospitals Downsize and Which Close
+%%% ===================================================================
+
+\section{Which Hospitals Downsize and Which Close}
+\label{sec:app-populations}
+
+Table~\ref{tab:converters-closers} compares converters in the year before designation to hospitals in the year before they closed. Converters had a mean three-year operating margin of $-9$ percent and a current ratio of 2.6, against $-14$ percent and 1.7 for closing hospitals with 50 or fewer beds. Converters were not healthy on average, but their margins and liquidity were better than those of the hospitals that closed, and only about a quarter (27 percent) of converters had margins below the median closer. Converters were also more rural (67 percent against 18 percent) and more isolated (16 versus 12 miles on average to the nearest hospital) than the small hospitals that closed.
+
+Table~\ref{tab:bedsize-split} compares converters by their bed size three years before designation. Hospitals already at or below 25 beds do not downsize at all, gaining 1.9 beds on average, and 94 percent remain at or below 25 three years after designation. Hospitals at 26 to 35 beds shed 3.3 beds on average, those at 36 to 50 shed 13.8, and those at 51 to 75 shed 17.3. Roughly two-thirds of the 26 to 50 group are at exactly 25 beds three years after designation. The reduction therefore increases with how far above the limit a hospital was, which is what we would expect if hospitals restructure to qualify, and it is difficult to reconcile with selection of hospitals that were already contracting.
 
 
 %%% ===================================================================
 %%% SECTION 6: Anticipatory Downsizing
 %%% ===================================================================
 
-\section{Anticipatory Downsizing}
+\section[Pre-Designation Restructuring in the Eligibility-Restricted Design]{Pre-Designation Restructuring \ in the Eligibility-Restricted Design}
 \label{sec:app-anticipation}
 
-As documented in the main text, hospitals begin reducing beds and utilization in advance of formal CAH designation, consistent with the eligibility requirements imposing real operational constraints that hospitals must satisfy before conversion. If hospitals actively restructure in the year immediately preceding designation, then the standard event-study assumption that treatment begins at $t=0$ may attribute some of the treatment effect to the pre-period, attenuating estimated effects and potentially generating apparent pre-trend violations in capacity outcomes.
-
-To assess the sensitivity of our results to this anticipatory behavior, we re-estimate the SDID specification from the eligibility-restricted design described in the main text, after redefining treatment as beginning one year before formal CAH designation (i.e., at $t=-1$ rather than $t=0$). This shifts the last pre-treatment period from $t=-1$ to $t=-2$, excluding the year of most active pre-designation adjustment from the donor-matching window. Table~\ref{tab:anticipation} reports the results.
-
-Redefining treatment to begin one year earlier generally strengthens the estimated effects. Financial outcomes show the clearest amplification, with operating margin, current ratio, net fixed assets, and capital expenditures all increasing in magnitude and, in several cases, gaining statistical significance. FTE RNs and inpatient days per bed also amplify. Total beds and OB beds are slightly smaller in magnitude, consistent with hospitals having already begun downsizing by $t = -1$, so that shifting the treatment window captures less of the initial adjustment. Overall, these patterns confirm that hospitals actively restructure before formal designation and that the baseline specification conservatively attributes some treatment-period restructuring to the pre-treatment window.
+The main text reports estimates with treatment dated one year before designation for the state-timing design. Table~\ref{tab:anticipation} reports the same exercise for the eligibility-restricted design. The capacity effects are similar under either dating, with FTE RNs and inpatient days per bed declining somewhat more and total beds and OB beds slightly less. The margin effect falls by half, from 0.037 to 0.018, and the declines in net patient revenue and operating expenses per bed become larger. This is because the year before designation is counted as treated, and in that year hospitals are shedding scale before cost-based reimbursement begins. These results for the eligibility-restricted design therefore mirror the state-timing results in the main text.
 
 
 %%% ===================================================================
@@ -242,7 +237,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \scriptsize
 \renewcommand{\arraystretch}{0.85}
 \begin{minipage}[h]{6in}
-\caption[Sample Comparison]{\textbf{Sample Comparison: SDID Balanced Panel vs.\ Full Sample}\footnote{``Treated'' and ``Control'' report the number of units (hospitals for Panels A--B; states for Panel C) in the SDID balanced panel and the full unbalanced sample, respectively. ``\% Lost'' is the percentage of units dropped when balancing the panel. Hospital-level outcomes filter to hospitals with at most 50 beds in all observed years.}}
+\caption[Sample Comparison]{\textbf{Sample Comparison: SDID Balanced Panel vs.\ Full Sample}\footnote{``Treated'' and ``Control'' report the number of units (hospitals for Panels A--B; states for Panel C) in the SDID balanced panel and the full unbalanced sample, respectively. ``\% Lost'' is the percentage of units dropped when balancing the panel. Hospital-level outcomes are restricted to hospitals with 50 or fewer beds in at least one year of the event window. Financial outcomes use the three-year pre-period of the main estimates; the other hospital-level outcomes use five years.}}
 \label{tab:diag-sample}
 \centerline{\input{../results/diagnostics/diag-sample-comparison.tex}}
 \end{minipage}
@@ -254,7 +249,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \centering
 \small
 \begin{minipage}[h]{6in}
-\caption[Pre-Trend Tests]{\textbf{Pre-Trend Tests: Interaction of Event Time and Treatment in Pre-Periods}\footnote{Each row reports the coefficient on the interaction of event time and treatment status, estimated on pre-treatment observations only. Standard errors are clustered at the hospital level for hospital-level outcomes and at the state level for state-level outcomes. $^{*}$~$p<0.10$, $^{**}$~$p<0.05$, $^{***}$~$p<0.01$.}}
+\caption[Pre-Trend Tests]{\textbf{Pre-Trend Tests: Interaction of Event Time and Treatment in Pre-Periods}\footnote{Each row reports the coefficient on the interaction of event time and treatment status, estimated on pre-treatment observations of the unweighted balanced panel, before SDID reweighting. Standard errors are clustered at the hospital level for hospital-level outcomes and at the state level for state-level outcomes. $^{*}$~$p<0.10$, $^{**}$~$p<0.05$, $^{***}$~$p<0.01$.}}
 \label{tab:diag-pretrend}
 \centerline{\input{../results/diagnostics/diag-pretrend.tex}}
 \end{minipage}
@@ -302,15 +297,6 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 
 %%% Alternative Estimators Tables
 
-\begin{table}[!h]
-\centering
-\footnotesize
-\begin{minipage}[h]{6in}
-\caption[CS ATT Estimates]{\textbf{Callaway--Sant'Anna ATT Estimates: State-Timing Design}\footnote{ATT estimates from the Callaway--Sant'Anna estimator with ``not-yet-treated'' control group specification. Revenue and expense measures are in thousands of 2010 dollars per bed. Closures and mergers are state-level counts per 100 hospitals.}}
-\label{tab:cs-overall}
-\centerline{\input{../results/att_cs_overall.tex}}
-\end{minipage}
-\end{table}
 
 \clearpage
 
@@ -318,7 +304,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \centering
 \footnotesize
 \begin{minipage}[h]{6in}
-\caption[IFE ATT Estimates]{\textbf{Interactive Fixed Effects ATT Estimates}\footnote{ATT estimates from the interactive fixed effects (IFE) counterfactual estimator. The number of factors is selected by cross-validation for each cohort. Revenue and expense measures are in thousands of 2010 dollars per bed. $N_{tr}$ reports the total number of treated units across cohorts. Bootstrap standard errors based on 150 replications.}}
+\caption[IFE ATT Estimates]{\textbf{Interactive Fixed Effects ATT Estimates}\footnote{ATT estimates from the interactive fixed effects (IFE) counterfactual estimator. The number of factors is selected by cross-validation for each cohort. Revenue and expense measures are in thousands of 2010 dollars per bed. $N_{tr}$ reports the total number of treated units across cohorts. Bootstrap standard errors based on 150 replications. Financial outcomes pool cohorts 2001--2005.}}
 \label{tab:gsynth}
 \centerline{\input{../results/att_gsynth.tex}}
 \end{minipage}
@@ -339,67 +325,67 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 
 \clearpage
 
+%%% Visits CS Table
+
+\begin{table}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Visits and Births: Eligibility-Restricted]{\textbf{ATT Estimates on Visits and Births: Eligibility-Restricted Design}\footnote{Pooled SDID and Callaway--Sant'Anna ATTs for the eligibility-restricted design (cohorts 1999--2005). Visit outcomes are annual counts per pre-designation bed. Births are annual counts. The main text reports the state-timing design.}}
+\label{tab:visits-cs}
+\centerline{\input{../results/att_visits_elig.tex}}
+\end{minipage}
+\end{table}
+
+\clearpage
+
+%%% Adoption Timing Table
+
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{minipage}[h]{6.3in}
+\caption[State Characteristics by Adoption Cohort]{\textbf{State Characteristics by CAH Adoption Cohort}\footnote{Means of state characteristics by the year of the state's first CAH designation. Rural share, hospitals with 50 or fewer beds, mean beds, government share, and distance to the nearest hospital are measured in 1996; closures are per 100 hospital-years over 1990--1996 and the change from 1990--1993 to 1994--1996; operating margin is the 1994--1996 mean; unemployment is the BLS state rate. The last column is the correlation between each characteristic and the adoption year among the 35 states adopting in 1999--2001.}}
+\label{tab:adoption-timing}
+\centerline{\resizebox{\linewidth}{!}{\input{../results/att_adoption_timing.tex}}}
+\end{minipage}
+\end{table}
+
+\clearpage
+
+%%% Converters vs Closers Table
+
+\begin{table}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Converters and Closers]{\textbf{Converting Hospitals and Closing Hospitals before the Event}\footnote{Means in the year before designation for converters and in the year before closure for hospitals that closed over 1995--2010, where small closers are hospitals with 50 or fewer beds. Operating margin and current ratio are three-year means ending in that year.}}
+\label{tab:converters-closers}
+\centerline{\input{../results/att_converters_closers.tex}}
+\end{minipage}
+\end{table}
+
+\clearpage
+
+%%% Bed-Size Split Table
+
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{minipage}[h]{6.3in}
+\caption[Bed Reductions by Initial Size]{\textbf{Bed Reductions among Converters by Bed Size Three Years before Designation}\footnote{Converters grouped by total beds three years before designation, using raw AHA bed counts. Columns report mean beds at $t-3$, $t$, and $t+3$, the change from $t-3$ to $t+3$, and the share of hospitals at exactly 25 beds at $t+3$.}}
+\label{tab:bedsize-split}
+\centerline{\resizebox{\linewidth}{!}{\input{../results/att_bedsize_split.tex}}}
+\end{minipage}
+\end{table}
+
+\clearpage
+
 %%% ===================================================================
 %%% FIGURES
 %%% ===================================================================
 
 %%% SDID Diagnostics Figures
 
-\begin{figure}[!h]
-\centering
-\begin{minipage}[h]{6in}
-\caption{\textbf{Pre/Post Trends: Financial Performance}}
-\label{fig:pretrend-financial}
-\begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-margin.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-current_ratio.png} \\
-\small (a) Operating Margin & \small (b) Current Ratio \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-net_fixed.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-capex.png} \\
-\small (c) Net Fixed Assets & \small (d) Capital Expenditures \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-net_pat_rev.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-tot_operating_exp.png} \\
-\small (e) Net Patient Revenue per Bed & \small (f) Operating Expenses per Bed
-\end{tabular}
-\end{minipage}
-\end{figure}
 
-\clearpage
-
-\begin{figure}[!h]
-\centering
-\begin{minipage}[h]{6in}
-\caption{\textbf{Pre/Post Trends: Capacity and Staffing}}
-\label{fig:pretrend-capacity}
-\begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-bdtot.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-obbd.png} \\
-\small (a) Total Beds & \small (b) Obstetric Beds \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-ftern.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-ip_per_bed.png} \\
-\small (c) Full Time Equivalent RNs & \small (d) Inpatient Days per Bed
-\end{tabular}
-\end{minipage}
-\end{figure}
-
-\clearpage
-
-\begin{figure}[!h]
-\centering
-\begin{minipage}[h]{6in}
-\caption{\textbf{Pre/Post Trends: Organizational Changes}}
-\label{fig:pretrend-org}
-\begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-system.png} &
-\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-closures.png} \\
-\small (a) System Membership & \small (b) Closures \\[0.5cm]
-\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/diagnostics/diag-pretrend-mergers.png}} \\
-\multicolumn{2}{c}{\small (c) Mergers}
-\end{tabular}
-\end{minipage}
-\end{figure}
-
-\clearpage
 
 %%% Estimation Sample Figures
 
@@ -463,7 +449,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption{\textbf{CS Event-Study Estimates: Financial Performance and Capital}}
+\caption[CS Event Studies: Financial]{\textbf{CS Event-Study Estimates: Financial Performance and Capital}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
 \label{fig:cs-financial}
 \begin{tabular}{cc}
 \includegraphics[width=0.48\textwidth]{../results/margin-cs.png} &
@@ -484,7 +470,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption{\textbf{CS Event-Study Estimates: Capacity and Staffing}}
+\caption[CS Event Studies: Capacity]{\textbf{CS Event-Study Estimates: Capacity and Staffing}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period.}}
 \label{fig:cs-capacity}
 \begin{tabular}{cc}
 \includegraphics[width=0.48\textwidth]{../results/beds-cs.png} &
@@ -502,7 +488,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption{\textbf{CS Event-Study Estimates: Organizational Changes}}
+\caption[CS Event Studies: Organizational]{\textbf{CS Event-Study Estimates: Organizational Changes}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Closures and mergers are state-level counts per 100 hospitals.}}
 \label{fig:cs-org}
 \begin{tabular}{cc}
 \includegraphics[width=0.48\textwidth]{../results/closure-rate-cs.png} &
@@ -519,7 +505,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Financial Performance and Capital}}
+\caption[CS Event Studies (Eligibility): Financial]{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Financial Performance and Capital}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
 \label{fig:elig-cs-financial}
 \begin{tabular}{cc}
 \includegraphics[width=0.48\textwidth]{../results/elig-margin-cs.png} &
@@ -540,7 +526,7 @@ Redefining treatment to begin one year earlier generally strengthens the estimat
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Capacity, Staffing, and System Membership}}
+\caption[CS Event Studies (Eligibility): Capacity]{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Capacity, Staffing, and System Membership}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period.}}
 \label{fig:elig-cs-capacity}
 \begin{tabular}{cc}
 \includegraphics[width=0.48\textwidth]{../results/elig-beds-cs.png} &

@@ -34,8 +34,6 @@ run_sdid_cohort_pp <- function(c, outcome_sym, pp) {
   setup <- panel.matrices(as.data.frame(bal.c))
   Ntr   <- nrow(setup$Y) - setup$N0
 
-  cat(sprintf("[cohort %d: %d→%d units (%d treated)] ",
-              c, n_before, n_after, Ntr))
 
   # Need at least 2 pre-periods and 1 treated unit
   if (setup$T0 < 2 || Ntr < 1) {
@@ -66,23 +64,20 @@ results <- tibble(
 for (oname in names(financial_outcomes)) {
   o <- financial_outcomes[[oname]]
   osym <- sym(oname)
-  cat("Outcome:", oname, "\n")
 
   for (pp in pre_periods) {
-    cat("  pre_period =", pp, "... ")
 
     atts_all <- bind_rows(map(cohorts_fin, function(c) {
       tryCatch(
         run_sdid_cohort_pp(c, osym, pp),
         error = function(e) {
-          cat(sprintf("[cohort %d failed: %s] ", c, conditionMessage(e)))
+          message(sprintf("financial pre-period: cohort %d failed (%s)", c, conditionMessage(e)))
           NULL
         }
       )
     }))
 
     if (nrow(atts_all) == 0) {
-      cat("no valid cohorts\n")
       results <- bind_rows(results, tibble(
         outcome = oname, label = o$label, pre_period = as.integer(pp),
         att = NA_real_, se = NA_real_, ci_low = NA_real_, ci_high = NA_real_,
@@ -98,8 +93,6 @@ for (oname in names(financial_outcomes)) {
     n_tot   <- sum(atts_all$N_total)
     n_tr    <- sum(atts_all$Ntr)
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]  N = %d (%d treated)\n",
-                att_w, ci_low, ci_high, n_tot, n_tr))
 
     results <- bind_rows(results, tibble(
       outcome = oname, label = o$label, pre_period = as.integer(pp),
@@ -170,8 +163,6 @@ tex_lines <- c(tex_lines,
 tex_lines <- c(tex_lines, "\\bottomrule", "\\end{tabular}")
 
 writeLines(tex_lines, "results/app-preperiod-financial.tex")
-cat("\nLaTeX table written to results/app-preperiod-financial.tex\n")
 
 ## Also save CSV for reference
 write_csv(results, "results/diagnostics/app-preperiod-financial.csv")
-cat("CSV written to results/diagnostics/app-preperiod-financial.csv\n")

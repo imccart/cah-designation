@@ -5,7 +5,6 @@
 # Expects from _run-analysis.r: est.dat, state.dat, bed.cut, post, financial.pre,
 #   hosp.results.table, state.results.table
 
-cat("\n=== State.cut sensitivity analysis ===\n")
 
 # Outcome maps (matching 2-hospital-dd.R and 4-changes-state-dd.R) ----------
 sc_hosp_outcomes <- list(
@@ -106,7 +105,6 @@ sc_sensitivity <- tibble(
 )
 
 for (sc in state_cuts) {
-  cat(sprintf("\n--- state.cut = %d ---\n", sc))
 
   # Rebuild stacked datasets with new state.period
   sh <- stack_hosp(pre.period = 5, post.period = post, state.period = sc)
@@ -118,20 +116,18 @@ for (sc in state_cuts) {
     osym <- sym(oname)
     pp  <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-    cat(sprintf("  [sc=%d] %s ... ", sc, oname))
 
     atts_all <- bind_rows(map(cohorts_hosp, function(c) {
       tryCatch(
         run_sdid_hosp_sc(c, osym, pp, sh),
         error = function(e) {
-          cat(sprintf("[cohort %d failed] ", c))
+          message(sprintf("statecut sensitivity: cohort %d failed", c))
           NULL
         }
       )
     }))
 
     if (nrow(atts_all) == 0) {
-      cat("no valid cohorts\n")
       sc_sensitivity <- bind_rows(sc_sensitivity, tibble(
         outcome = o$label, att = NA_real_, ci_low = NA_real_,
         ci_high = NA_real_, state_cut = as.integer(sc)
@@ -142,8 +138,6 @@ for (sc in state_cuts) {
     att_w  <- with(atts_all, sum(Ntr * att) / sum(Ntr))
     se_w   <- with(atts_all, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]\n",
-                att_w, att_w - 1.96 * se_w, att_w + 1.96 * se_w))
 
     sc_sensitivity <- bind_rows(sc_sensitivity, tibble(
       outcome   = o$label,
@@ -158,20 +152,18 @@ for (sc in state_cuts) {
   for (oname in names(sc_state_outcomes)) {
     o <- sc_state_outcomes[[oname]]
 
-    cat(sprintf("  [sc=%d] %s ... ", sc, oname))
 
     atts_all <- bind_rows(map(cohorts_state, function(c) {
       tryCatch(
         run_sdid_state_sc(c, oname, ss),
         error = function(e) {
-          cat(sprintf("[cohort %d failed] ", c))
+          message(sprintf("statecut sensitivity: cohort %d failed", c))
           NULL
         }
       )
     }))
 
     if (nrow(atts_all) == 0) {
-      cat("no valid cohorts\n")
       sc_sensitivity <- bind_rows(sc_sensitivity, tibble(
         outcome = o$label, att = NA_real_, ci_low = NA_real_,
         ci_high = NA_real_, state_cut = as.integer(sc)
@@ -182,8 +174,6 @@ for (sc in state_cuts) {
     att_w  <- with(atts_all, sum(Ntr * att) / sum(Ntr))
     se_w   <- with(atts_all, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]\n",
-                att_w, att_w - 1.96 * se_w, att_w + 1.96 * se_w))
 
     sc_sensitivity <- bind_rows(sc_sensitivity, tibble(
       outcome   = o$label,
@@ -275,6 +265,3 @@ ggsave("results/statecut-sensitivity.png", p_sc,
 write_csv(bind_rows(sc_baseline, sc_sensitivity),
           "results/diagnostics/statecut-sensitivity.csv")
 
-cat("\nState.cut sensitivity complete.\n")
-cat("  Figure: results/statecut-sensitivity.png\n")
-cat("  CSV:    results/diagnostics/statecut-sensitivity.csv\n")

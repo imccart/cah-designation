@@ -12,7 +12,6 @@ library(BMisc)
 # 1. Margin data availability by year for the 1999 cohort
 # =============================================================================
 
-cat("\n=== Margin Data Availability by Year (1999 Cohort) ===\n")
 stack.hosp %>%
   filter(stack_group == 1999) %>%
   group_by(year) %>%
@@ -27,7 +26,6 @@ stack.hosp %>%
 # 2. Treated vs control with complete data for 5 pre-periods
 # =============================================================================
 
-cat("\n=== Complete Data by Treatment Status (5 Pre-Periods) ===\n")
 completeness_5 <- stack.hosp %>%
   filter(stack_group == 1999, stacked_event_time >= -5) %>%
   group_by(ID) %>%
@@ -49,7 +47,6 @@ print(completeness_5)
 # 3. Compare to 4 and 3 pre-periods
 # =============================================================================
 
-cat("\n=== Complete Data by Treatment Status (4 Pre-Periods) ===\n")
 completeness_4 <- stack.hosp %>%
   filter(stack_group == 1999, stacked_event_time >= -4) %>%
   group_by(ID) %>%
@@ -67,7 +64,6 @@ completeness_4 <- stack.hosp %>%
   )
 print(completeness_4)
 
-cat("\n=== Complete Data by Treatment Status (3 Pre-Periods) ===\n")
 completeness_3 <- stack.hosp %>%
   filter(stack_group == 1999, stacked_event_time >= -3) %>%
   group_by(ID) %>%
@@ -89,7 +85,6 @@ print(completeness_3)
 # 4. Balanced panel sizes
 # =============================================================================
 
-cat("\n=== Balanced Panel Sizes ===\n")
 
 for (pre_pd in c(3, 4, 5)) {
   synth.test <- stack.hosp %>%
@@ -102,19 +97,12 @@ for (pre_pd in c(3, 4, 5)) {
     group_by(treated) %>%
     summarize(n = n_distinct(ID), .groups = "drop")
 
-  cat(sprintf("\nPre-period = %d:\n", pre_pd))
-  cat(sprintf("  Before balance: %d hospitals\n", n_distinct(synth.test$ID)))
-  cat(sprintf("  After balance:  %d hospitals\n", n_distinct(balanced.test$ID)))
-  cat(sprintf("  Treated: %d, Control: %d\n",
-              bal_summary$n[bal_summary$treated == 1],
-              bal_summary$n[bal_summary$treated == 0]))
 }
 
 # =============================================================================
 # 5. Which years are causing the drop?
 # =============================================================================
 
-cat("\n=== Hospitals Lost at Each Pre-Period Year ===\n")
 
 # Get IDs with complete data at each pre-period length
 ids_by_preperiod <- map(3:5, function(pre_pd) {
@@ -128,17 +116,12 @@ ids_by_preperiod <- map(3:5, function(pre_pd) {
 }) %>%
   set_names(c("pre3", "pre4", "pre5"))
 
-cat(sprintf("IDs with 3 pre-periods: %d\n", length(ids_by_preperiod$pre3)))
-cat(sprintf("IDs with 4 pre-periods: %d\n", length(ids_by_preperiod$pre4)))
-cat(sprintf("IDs with 5 pre-periods: %d\n", length(ids_by_preperiod$pre5)))
 
 # Which IDs are lost going from 4 to 5?
 lost_4to5 <- setdiff(ids_by_preperiod$pre4, ids_by_preperiod$pre5)
-cat(sprintf("\nIDs lost going from 4 to 5 pre-periods: %d\n", length(lost_4to5)))
 
 # Why are they lost? Check which year is missing
 if (length(lost_4to5) > 0) {
-  cat("\nMissing years for hospitals lost at 5 pre-periods:\n")
   stack.hosp %>%
     filter(stack_group == 1999, ID %in% lost_4to5, stacked_event_time >= -5) %>%
     group_by(ID) %>%

@@ -1,10 +1,11 @@
 # Meta --------------------------------------------------------------------
 ## Permutation inference for SDID estimates
 ## Provides non-parametric inference for SDID with small N_tr
-## Uses stack.hosp (state-timing design), cohorts 1999-2001
+## Uses stack.hosp for the hospital-level outcomes and stack.state for
+## closures and mergers, cohorts 1999-2001
 ## Produces: multi-panel histogram figure + p-value CSV
 
-# Expects from _run-analysis.r: stack.hosp, hosp.results.table, bed.cut, financial.pre
+# Expects from _run-analysis.r: stack.hosp, stack.state, hosp.results.table, bed.cut, financial.pre
 
 perm.cohorts <- c(1999, 2000, 2001)
 n_perms <- 500
@@ -102,13 +103,12 @@ for (oname in names(perm_outcome_map)) {
   outcome_label <- o$label
   pp            <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [perm] Running %s ...\n", oname))
   t0 <- Sys.time()
 
   # Actual SDID estimate
   actual <- bind_rows(map(perm.cohorts, ~run_sdid_cohort(.x, stack.hosp, outcome_sym, pp)))
   if (nrow(actual) == 0) {
-    cat(sprintf("    [perm] SDID failed for all cohorts on %s, skipping\n", oname))
+    message(sprintf("permutation: %s skipped, SDID failed for every cohort", oname))
     next
   }
   att_actual <- with(actual, sum(Ntr * att) / sum(Ntr))
@@ -131,8 +131,6 @@ for (oname in names(perm_outcome_map)) {
   p_val <- mean(abs(perm_atts) >= abs(att_actual))
 
   t1 <- Sys.time()
-  cat(sprintf("    ATT = %.3f, p = %.3f  (%.1f min)\n",
-              att_actual, p_val, as.numeric(t1 - t0, units = "mins")))
 
   perm.results <- bind_rows(perm.results, tibble(
     outcome = outcome_label, att_actual = att_actual, p_value = p_val
@@ -142,9 +140,76 @@ for (oname in names(perm_outcome_map)) {
   ))
 }
 
+# State-level outcomes ---------------------------------------------------------
+# Units are states rather than hospitals, and estimates are scaled to counts per
+# 100 hospitals using each cohort's pre-period hospital count, as in
+# 4-changes-state-dd.R. The scale is a units conversion, so the same cohort
+# denominator is applied to the actual and permuted assignments.
+
+state_denom <- stack.state %>%
+  filter(stacked_event_time <= -1, treated == 1) %>%
+  group_by(stack_group) %>%
+  summarize(mean_hosp = mean(hospitals, na.rm = TRUE), .groups = "drop")
+
+run_state_cohort <- function(c, outcome_var, permute) {
+  dat <- stack.state %>%
+    filter(stack_group == c) %>%
+    transmute(ID = as.numeric(factor(MSTATE)), year,
+              outcome = .data[[outcome_var]], treated, post_treat)
+
+  bal <- as_tibble(makeBalancedPanel(dat, idname = "ID", tname = "year"))
+  if (nrow(bal) == 0) return(NULL)
+
+  units <- bal %>% distinct(ID, treated)
+  n_tr <- sum(units$treated == 1)
+  n_co <- sum(units$treated == 0)
+  if (n_tr < 2 || n_co < 2) return(NULL)
+
+  if (permute) {
+    perm_treated <- sample(units$ID, n_tr)
+    bal <- bal %>%
+      mutate(post = as.integer(year >= c),
+             post_treat = as.integer(ID %in% perm_treated) * post)
+  }
+
+  setup <- tryCatch(panel.matrices(as.data.frame(bal %>% select(ID, year, outcome, post_treat))),
+                    error = function(e) NULL)
+  if (is.null(setup)) return(NULL)
+  est <- tryCatch(synthdid_estimate(setup$Y, setup$N0, setup$T0), error = function(e) NULL)
+  if (is.null(est)) return(NULL)
+
+  denom <- state_denom %>% filter(stack_group == c) %>% pull(mean_hosp)
+  tibble(cohort = c, att = (as.numeric(est) / denom) * 100, Ntr = n_tr)
+}
+
+for (ov in c("closures", "mergers")) {
+  outcome_label <- if (ov == "closures") "Closures" else "Mergers"
+  t0 <- Sys.time()
+
+  actual <- bind_rows(compact(map(perm.cohorts, ~run_state_cohort(.x, ov, FALSE))))
+  if (nrow(actual) == 0) {
+    message(sprintf("permutation: %s skipped, SDID failed for every cohort", ov))
+    next
+  }
+  att_actual <- with(actual, sum(Ntr * att) / sum(Ntr))
+
+  perm_atts <- numeric(n_perms)
+  for (i in seq_len(n_perms)) {
+    pa <- bind_rows(compact(map(perm.cohorts, ~run_state_cohort(.x, ov, TRUE))))
+    perm_atts[i] <- if (nrow(pa) == 0) NA else with(pa, sum(Ntr * att) / sum(Ntr))
+  }
+  perm_atts <- perm_atts[!is.na(perm_atts)]
+  p_val <- mean(abs(perm_atts) >= abs(att_actual))
+
+
+  perm.results <- bind_rows(perm.results, tibble(
+    outcome = outcome_label, att_actual = att_actual, p_value = p_val))
+  perm.distributions <- bind_rows(perm.distributions, tibble(
+    outcome = outcome_label, att_perm = perm_atts))
+}
+
+
 t1_total <- Sys.time()
-cat(sprintf("\n  [perm] Total time: %.1f minutes\n",
-            as.numeric(t1_total - t0_total, units = "mins")))
 
 # Multi-panel histogram --------------------------------------------------------
 perm_plot_dat <- perm.distributions %>%
@@ -173,4 +238,3 @@ ggsave("results/permutation-sdid.png", p_perm,
 # Save CSV ---------------------------------------------------------------------
 write_csv(perm.results, "results/diagnostics/permutation_pvalues.csv")
 
-cat("  [perm] Done. Figure at results/permutation-sdid.png\n")

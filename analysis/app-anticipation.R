@@ -4,7 +4,6 @@
 # Uses stack.elig (eligibility-restricted design, cohorts 1999-2005)
 # Expects from _run-analysis.r: stack.elig, bed.cut, financial.pre, elig.results
 
-cat("\n=== Anticipation robustness ===\n")
 
 # Outcome map (matching 3-hospital-dd-alt.R) --------------------------------
 antic_outcome_map <- list(
@@ -69,20 +68,18 @@ for (oname in names(antic_outcome_map)) {
   osym <- sym(oname)
   pp   <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [antic] %s ... ", oname))
 
   atts_all <- bind_rows(map(antic_cohorts, function(c) {
     tryCatch(
       run_sdid_antic(c, osym, pp),
       error = function(e) {
-        cat(sprintf("[cohort %d failed] ", c))
+        message(sprintf("anticipation: cohort %d failed", c))
         NULL
       }
     )
   }))
 
   if (nrow(atts_all) == 0) {
-    cat("no valid cohorts\n")
     antic.results <- bind_rows(antic.results, tibble(
       outcome = o$label, sdid_att = NA_real_,
       sdid_ci_low = NA_real_, sdid_ci_high = NA_real_,
@@ -95,8 +92,6 @@ for (oname in names(antic_outcome_map)) {
   se_w   <- with(atts_all, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
   ntr_w  <- sum(atts_all$Ntr)
 
-  cat(sprintf("ATT = %.3f [%.3f, %.3f]  Ntr = %d\n",
-              att_w, att_w - 1.96 * se_w, att_w + 1.96 * se_w, ntr_w))
 
   antic.results <- bind_rows(antic.results, tibble(
     outcome     = o$label,
@@ -161,6 +156,3 @@ writeLines(c(
 # Save CSV ------------------------------------------------------------------
 write_csv(antic_table, "results/diagnostics/anticipation-comparison.csv")
 
-cat("\nAnticipation robustness complete.\n")
-cat("  Table: results/att_anticipation.tex\n")
-cat("  CSV:   results/diagnostics/anticipation-comparison.csv\n")

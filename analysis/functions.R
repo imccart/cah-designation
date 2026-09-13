@@ -243,3 +243,49 @@ stack_state <- function(pre.period, post.period, state.period) {
 }
 
 
+# Callaway and Sant'Anna -------------------------------------------------------
+# One panel with staggered adoption handled by the estimator, a not-yet-treated
+# comparison group, and no covariates. Hospitals that never convert are group 0
+# in every year. Dynamic effects are aggregated over the same post-treatment
+# window the SDID estimates use, so the two are reported on the same horizon.
+cs_att <- function(dat, outcome.name, cohorts, bed.cut, min.es = -5, max.es = 5) {
+  osym <- sym(outcome.name)
+
+  d <- dat %>%
+    group_by(ID) %>%
+    mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>%
+    ungroup() %>%
+    filter(min_bedsize <= bed.cut) %>%
+    mutate(y = !!osym,
+           ID2 = as.numeric(factor(ID)),
+           treat_group = ifelse(is.na(eff_year), 0, eff_year)) %>%
+    filter(!is.na(y), treat_group == 0 | treat_group %in% cohorts) %>%
+    select(ID2, treat_group, year, y)
+
+  ntr <- d %>% filter(treat_group > 0) %>% distinct(ID2) %>% nrow()
+
+  ## att_gt draws a multiplier bootstrap for its confidence bands. Seeding here
+  ## rather than relying on the driver's seed keeps the intervals identical
+  ## regardless of what ran earlier, so skipping a step upstream cannot move them.
+  set.seed(1234)
+
+  raw <- tryCatch(
+    att_gt(yname = "y", gname = "treat_group", idname = "ID2", tname = "year",
+           control_group = "notyettreated", panel = TRUE, allow_unbalanced_panel = TRUE,
+           data = as.data.frame(d), xformla = ~1,
+           base_period = "universal", est_method = "reg"),
+    error = function(e) {
+      message(sprintf("cs_att: %s failed (%s)", outcome.name, conditionMessage(e)))
+      NULL })
+  if (is.null(raw)) return(NULL)
+
+  dyn <- tryCatch(aggte(raw, type = "dynamic", na.rm = TRUE, min_e = min.es, max_e = max.es),
+                  error = function(e) NULL)
+  if (is.null(dyn)) return(NULL)
+
+  list(att = dyn$overall.att, se = dyn$overall.se,
+       ci_low = dyn$overall.att - 1.96 * dyn$overall.se,
+       ci_high = dyn$overall.att + 1.96 * dyn$overall.se,
+       ntr = ntr,
+       es = tibble(event_time = dyn$egt, estimate = dyn$att, se = dyn$se))
+}

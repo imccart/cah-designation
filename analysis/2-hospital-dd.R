@@ -39,7 +39,6 @@ for (oname in names(hosp_outcome_map)) {
   cohorts       <- o$cohorts
   pre_period    <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [hosp-dd] Running %s ...\n", oname))
 
   # SYNTH DD for single cohort ------------------------------------------------
   cohort.year <- 2000
@@ -207,45 +206,11 @@ for (oname in names(hosp_outcome_map)) {
   min.es <- -pre_period
   max.es <- 5
 
-  cs.dat <- est.dat %>%
-        group_by(ID) %>%
-        mutate(min_bedsize=min(BDTOT, na.rm=TRUE), max_distance=max(distance, na.rm=TRUE)) %>%
-        ungroup() %>%
-        filter(min_bedsize<=bed.cut) %>%
-        mutate(y=!!outcome_sym,
-              ID2=as.numeric(factor(ID)),
-              treat_group=case_when(
-                  !is.na(eff_year) ~ eff_year,
-                  is.na(eff_year) & state_treat_year > year + state.cut ~ 0,
-                  is.na(eff_year) & state_treat_year==0 ~ 0,
-                  TRUE ~ NA )) %>%
-        filter(!is.na(y), !is.na(year), !is.na(BDTOT), !is.na(distance),
-           treat_group %in% c(0, 1999, 2000, 2001)) %>%
-        select(ID, ID2, MSTATE, treat_group, year, y, BDTOT, distance,
-               own_type, teach_major, min_bedsize, max_distance) %>%
-        mutate(own_type=as.factor(own_type))
+  cs.out <- cs_att(est.dat, oname, cohorts, bed.cut,
+                   min.es = min.es, max.es = max.es)
+  if (is.null(cs.out)) stop(sprintf("CS failed for every cohort on %s", oname))
 
-  csa.raw <- att_gt(yname="y",
-                     gname="treat_group",
-                     idname="ID2",
-                     tname="year",
-                     control_group="notyettreated",
-                     panel=TRUE,
-                     allow_unbalanced_panel=TRUE,
-                     data = cs.dat,
-                     xformla = ~min_bedsize+max_distance,
-                     base_period="universal",
-                     est_method="ipw")
-  csa.att <- aggte(csa.raw, type="simple", na.rm=TRUE)
-  summary(csa.att)
-  csa.es <- aggte(csa.raw, type="dynamic", na.rm=TRUE, min_e=min.es, max_e=max.es)
-  summary(csa.es)
-
-  est.cs <- tibble(
-    event_time = csa.es$egt,
-    estimate   = csa.es$att,
-    se         = csa.es$se
-  ) %>%
+  est.cs <- cs.out$es %>%
     mutate(
       conf.low  = if_else(event_time!= -1, estimate - 1.96 * se, 0),
       conf.high = if_else(event_time!= -1, estimate + 1.96 * se, 0),
@@ -273,8 +238,8 @@ for (oname in names(hosp_outcome_map)) {
   )
 
   # Collect results ------------------------------------------------------------
-  cs_att_val <- csa.att$overall.att
-  cs_se_val  <- csa.att$overall.se
+  cs_att_val <- cs.out$att
+  cs_se_val  <- cs.out$se
 
   hosp.results.table <- bind_rows(hosp.results.table, tibble(
     outcome      = outcome_label,
@@ -318,4 +283,3 @@ for (c in sort(unique(hosp.cohort.results$cohort))) {
 }
 writeLines(cohort_tex_lines, "results/att_cohort.tex")
 
-cat("  [hosp-dd] Done. Results in hosp.results.table; cohort table written to results/att_cohort.tex\n")

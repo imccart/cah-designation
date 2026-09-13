@@ -7,7 +7,12 @@
 
 
 # Preliminaries -----------------------------------------------------------
-source('analysis/0-setup.R')
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, haven, readxl, janitor, here, zoo, fedmatch, zipcodeR,
+               fixest, did, did2s, BMisc, fect, glmnet, nnet, mlogit, survival,
+               scales, plotly, panelView, dotwhisker, patchwork, sf,
+               modelsummary, kableExtra, broom, synthdid)
+
 source('analysis/functions.R')
 
 ## Winsorization function
@@ -17,7 +22,16 @@ winsor_by_year <- function(x, probs = c(0.05, 0.95)) {
 }
 
 # Read-in data ------------------------------------------------------------
-aha.data <- read_csv('data/output/aha_final.csv')
+# The HCRIS fields in aha_final.csv are joined on the AHA provider number, which
+# misses converters' pre-designation cost reports. hcris_financial.csv carries
+# the same fields on the year-varying crosswalk, so it replaces them here and is
+# the only source of the six financial outcomes.
+hcris.financial <- read_csv('data/output/hcris_financial.csv', show_col_types = FALSE,
+                            col_types = cols(ID = col_character()))
+aha.data <- read_csv('data/output/aha_final.csv', col_types = cols(ID = col_character())) %>%
+  select(-any_of(c('net_pat_rev', 'tot_operating_exp', 'fixed_assets', 'accum_dep',
+                   'current_assets', 'current_liabilities'))) %>%
+  left_join(hcris.financial, by = c('ID', 'year'))
 aha.neighbors <- read_csv('data/output/aha_neighbors.csv')
 cah.dates <- read_csv('data/input/cah-states.csv')
 
@@ -70,7 +84,7 @@ cpi.final <- cpi.data %>%
 data.merge <- aha.data %>%
     left_join(aha.neighbors, by=c("ID", "year")) %>%
     left_join(cah.dates %>% select(cah_date_law=cah_date, cah_year_law=cah_year, MSTATE="abb"), by="MSTATE") %>%
-    filter(! MSTATE %in% c("AK","HI","PR","VI","GU","MP","AS", "N","0", "AS", "DC", "DE", "MH", "ML","MD"),
+    filter(! MSTATE %in% c("AK","HI","PR","VI","GU","MP","AS", "N","0", "DC", "DE", "MH", "ML","MD"),
            !is.na(MSTATE), MSTATE!="NA") %>%
     filter(COMMTY=="Y", hosp_type=="General") %>%
     group_by(ID, year) %>%
@@ -133,14 +147,10 @@ est.dat <- final.dat %>%
           ) %>%
   mutate(
     ip_per_bed=IPDTOT/beds_base,
-    gross_fixed_hcris = fixed_assets + accum_dep,
-    current_ratio_hcris=current_assets/current_liabilities,
-    margin_hcris=(net_pat_rev - tot_operating_exp)/net_pat_rev,
-    margin=ifelse(!is.na(margin_hcris), margin_hcris, margin_990),
-    net_fixed=ifelse(!is.na(fixed_assets), fixed_assets, net_fixed_990),
-    current_ratio=ifelse(!is.na(current_ratio_hcris), current_ratio_hcris, current_ratio_990),
-    net_pat_rev=ifelse(!is.na(net_pat_rev), net_pat_rev, net_pat_rev_990),
-    tot_operating_exp=ifelse(!is.na(tot_operating_exp), tot_operating_exp, tot_operating_exp_990),
+    gross_fixed = fixed_assets + accum_dep,
+    margin = ifelse(net_pat_rev > 0, (net_pat_rev - tot_operating_exp) / net_pat_rev, NA_real_),
+    current_ratio = ifelse(current_liabilities > 0, current_assets / current_liabilities, NA_real_),
+    net_fixed = fixed_assets,
     state_event_time=case_when(
       state_treat_year>0 ~ year - state_treat_year,
       state_treat_year==0 ~ -1),
@@ -154,9 +164,8 @@ est.dat <- final.dat %>%
   group_by(ID) %>%
   arrange(year, .by_group=TRUE) %>%
   mutate(capex_990=net_fixed_990 - lag(net_fixed_990) + depreciation_990,
-         capex_hcris=gross_fixed_hcris - lag(gross_fixed_hcris)) %>%
+         capex=gross_fixed - lag(gross_fixed)) %>%
   ungroup() %>%
-  mutate(capex=ifelse(!is.na(capex_hcris), capex_hcris, capex_990)) %>%
   group_by(year, ever_cah) %>%
   mutate(
     margin        = winsor_by_year(margin),
@@ -165,6 +174,14 @@ est.dat <- final.dat %>%
     capex         = winsor_by_year(capex),
     net_pat_rev       = winsor_by_year(net_pat_rev),
     tot_operating_exp = winsor_by_year(tot_operating_exp),
+    ## Form-990-only versions, processed identically. Used only by the R2.5
+    ## source comparison in R1_revision.R.
+    margin_9        = winsor_by_year(ifelse(margin_990 > -1 & margin_990 < 1, margin_990, NA_real_)),
+    net_fixed_9     = winsor_by_year(net_fixed_990),
+    current_ratio_9 = winsor_by_year(current_ratio_990),
+    capex_9         = winsor_by_year(capex_990),
+    net_pat_rev_9       = winsor_by_year(net_pat_rev_990),
+    tot_operating_exp_9 = winsor_by_year(tot_operating_exp_990),
     BDTOT         = winsor_by_year(BDTOT),
     OBBD          = winsor_by_year(OBBD),
     FTERN         = winsor_by_year(FTERN),
@@ -176,7 +193,11 @@ est.dat <- final.dat %>%
     net_fixed    = net_fixed / 1e6 / beds_base / cpi_deflator,
     capex        = capex / 1e4 / beds_base / cpi_deflator,
     net_pat_rev       = net_pat_rev / 1e3 / beds_base / cpi_deflator,
-    tot_operating_exp = tot_operating_exp / 1e3 / beds_base / cpi_deflator
+    tot_operating_exp = tot_operating_exp / 1e3 / beds_base / cpi_deflator,
+    net_fixed_9    = net_fixed_9 / 1e6 / beds_base / cpi_deflator,
+    capex_9        = capex_9 / 1e4 / beds_base / cpi_deflator,
+    net_pat_rev_9       = net_pat_rev_9 / 1e3 / beds_base / cpi_deflator,
+    tot_operating_exp_9 = tot_operating_exp_9 / 1e3 / beds_base / cpi_deflator
   ) %>%
   arrange(ID, year) %>%
   group_by(ID) %>%
@@ -191,7 +212,10 @@ est.dat <- final.dat %>%
          IPDTOT = na.approx(IPDTOT, x=year, na.rm=FALSE),
          ip_per_bed = na.approx(ip_per_bed, x=year, na.rm=FALSE),
          net_pat_rev = na.approx(net_pat_rev, x=year, na.rm=FALSE),
-         tot_operating_exp = na.approx(tot_operating_exp, x=year, na.rm=FALSE)) %>%
+         tot_operating_exp = na.approx(tot_operating_exp, x=year, na.rm=FALSE),
+         across(c(margin_9, net_fixed_9, current_ratio_9, capex_9,
+                  net_pat_rev_9, tot_operating_exp_9),
+                ~ na.approx(.x, x = year, na.rm = FALSE))) %>%
   ungroup()
 
 

@@ -4,19 +4,22 @@
 ## pre-trend heterogeneity and small balanced-panel samples
 ## Uses eligibility-restricted design (stack.elig), cohorts 1999-2005
 
-# Expects from _run-analysis.r: stack.elig, est.dat, bed.cut, post, financial.pre
+# Expects from _run-analysis.r: stack.elig, est.dat, bed.cut, post
 
 gsynth.cohorts <- 1999:2005
 
 # Outcome map ------------------------------------------------------------------
 gsynth_outcome_map <- list(
-  ## Financial (use financial.pre for pre-period)
-  margin            = list(label = "Operating margin",             pre_period = financial.pre),
-  current_ratio     = list(label = "Current ratio",                pre_period = financial.pre),
-  net_fixed         = list(label = "Net fixed assets",             pre_period = financial.pre),
-  capex             = list(label = "Capital expenditures per bed", pre_period = financial.pre),
-  net_pat_rev       = list(label = "Net patient revenue per bed",  pre_period = financial.pre),
-  tot_operating_exp = list(label = "Operating expenses per bed",   pre_period = financial.pre),
+  ## Financial: fect drops units with fewer than 5 untreated periods, so the
+  ## 5-year pre-period is kept here even though the SDID financial estimates
+  ## use financial.pre (3). fect does not require a balanced panel, so the
+  ## 2001-2005 cohorts retain their treated units on the HCRIS series.
+  margin            = list(label = "Operating margin",             pre_period = 5),
+  current_ratio     = list(label = "Current ratio",                pre_period = 5),
+  net_fixed         = list(label = "Net fixed assets",             pre_period = 5),
+  capex             = list(label = "Capital expenditures per bed", pre_period = 5),
+  net_pat_rev       = list(label = "Net patient revenue per bed",  pre_period = 5),
+  tot_operating_exp = list(label = "Operating expenses per bed",   pre_period = 5),
   ## Operational (5-year pre-period)
   BDTOT             = list(label = "Total beds",                   pre_period = 5),
   OBBD              = list(label = "OB beds",                      pre_period = 5),
@@ -43,10 +46,8 @@ for (oname in names(gsynth_outcome_map)) {
   outcome_label <- o$label
   pp            <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [gsynth] Running %s ...\n", oname))
 
   run_fect_cohort <- function(c) {
-    cat(sprintf("    [gsynth] cohort %d ...\n", c))
     fect.dat <- stack.elig %>%
       filter(stack_group == c) %>%
       group_by(ID) %>%
@@ -55,13 +56,14 @@ for (oname in names(gsynth_outcome_map)) {
       filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut,
              stacked_event_time >= -pp) %>%
       mutate(ID_num = as.numeric(factor(ID))) %>%
-      select(ID_num, year, outcome = !!outcome_sym, post_treat)
+      select(ID_num, year, outcome = !!outcome_sym, post_treat, treated)
 
-    ## Need at least 3 treated and 3 control units
-    n_tr <- n_distinct(fect.dat$ID_num[fect.dat$post_treat == 1])
-    n_co <- n_distinct(fect.dat$ID_num[fect.dat$post_treat == 0])
+    ## Need at least 3 treated and 3 control units (counted on the unit
+    ## indicator, not on post_treat, whose zeros include treated units' pre-years)
+    n_tr <- fect.dat %>% filter(treated == 1) %>% distinct(ID_num) %>% nrow()
+    n_co <- fect.dat %>% filter(treated == 0) %>% distinct(ID_num) %>% nrow()
     if (n_tr < 3 || n_co < 3) {
-      cat(sprintf("    [gsynth] cohort %d DROPPED: n_tr=%d, n_co=%d (need >=3)\n", c, n_tr, n_co))
+      message(sprintf("gsynth: %s, cohort %d dropped (n_tr=%d, n_co=%d, need >=3)", oname, c, n_tr, n_co))
       return(NULL)
     }
 
@@ -90,20 +92,17 @@ for (oname in names(gsynth_outcome_map)) {
   out_all <- map(gsynth.cohorts, function(c) {
     tryCatch(run_fect_cohort(c),
              error = function(e) {
-               cat(sprintf("    [gsynth] cohort %d DROPPED: fect error: %s\n", c, conditionMessage(e)))
+               message(sprintf("gsynth: %s, cohort %d dropped (%s)", oname, c, conditionMessage(e)))
                NULL })
   })
   out_all <- compact(out_all)
   atts_all <- bind_rows(out_all)
 
   if (nrow(atts_all) == 0) {
-    cat(sprintf("    [gsynth] fect failed for all cohorts on %s, skipping\n", oname))
+    message(sprintf("gsynth: %s skipped, fect failed for every cohort", oname))
     next
   }
   ## Transparency: report which cohorts entered the pooled estimate
-  cat(sprintf("    [gsynth] %s: pooled over cohorts %s (of %s requested)\n",
-              outcome_label, paste(atts_all$cohort, collapse = ", "),
-              paste(gsynth.cohorts, collapse = ", ")))
 
   ## Collect cohort-specific results
   gsynth.cohort.results <- bind_rows(gsynth.cohort.results,
@@ -124,11 +123,6 @@ for (oname in names(gsynth_outcome_map)) {
     n_cohorts = as.integer(nrow(atts_all))
   ))
 
-  cat(sprintf("    ATT = %s [%s, %s]  (%d cohorts, %d treated)\n",
-              formatC(att_w, format="f", digits=3),
-              formatC(ci_low, format="f", digits=3),
-              formatC(ci_high, format="f", digits=3),
-              nrow(atts_all), sum(atts_all$Ntr)))
 
   rm(out_all, atts_all); gc()
 }
@@ -171,4 +165,3 @@ writeLines(c(
 ## Save cohort-level CSV for diagnostics
 write_csv(gsynth.cohort.results, "results/diagnostics/gsynth_cohort_results.csv")
 
-cat("\n  [gsynth] Done. Results in gsynth.results; table at results/att_gsynth.tex\n")

@@ -55,3 +55,7 @@ _emails/
 # OS files
 .DS_Store
 Thumbs.db
+
+.mode-write.md
+.mode-code.jsonl
+notes/

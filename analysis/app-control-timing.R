@@ -5,7 +5,6 @@
 # Expects from _run-analysis.r: est.dat, state.dat, bed.cut, post, state.cut,
 #   financial.pre, hosp.results.table, state.results.table
 
-cat("\n=== Control timing sensitivity analysis ===\n")
 
 # Outcome maps (matching 2-hospital-dd.R and 4-changes-state-dd.R) ----------
 ct_hosp_outcomes <- list(
@@ -113,7 +112,6 @@ pool_atts <- function(atts_all) {
 # PART A: Drop immediate adopters
 # =========================================================================
 
-cat("\n--- Part A: Dropping immediate adopters (eff_year == state_treat_year) ---\n")
 
 # Count how many treated hospitals are immediate adopters
 n_immediate <- est.dat %>%
@@ -124,8 +122,6 @@ n_treated_total <- est.dat %>%
   filter(!is.na(eff_year)) %>%
   summarize(n = n_distinct(ID)) %>%
   pull(n)
-cat(sprintf("  Immediate adopters: %d / %d treated hospitals (%.1f%%)\n",
-            n_immediate, n_treated_total, 100 * n_immediate / n_treated_total))
 
 # Create modified est.dat excluding immediate adopters
 est.dat.noimmed <- est.dat %>%
@@ -153,25 +149,22 @@ for (oname in names(ct_hosp_outcomes)) {
   osym <- sym(oname)
   pp  <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [no-immed] %s ... ", oname))
 
   atts_all <- bind_rows(map(cohorts_hosp, function(c) {
     tryCatch(
       run_sdid_hosp_ct(c, osym, pp, sh_noimmed),
-      error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+      error = function(e) { NULL }
     )
   }))
 
   pooled <- pool_atts(atts_all)
   if (is.null(pooled)) {
-    cat("no valid cohorts\n")
     partA_results <- bind_rows(partA_results, tibble(
       outcome = o$label, att = NA_real_, ci_low = NA_real_,
       ci_high = NA_real_, spec = "no_immediate"))
     next
   }
 
-  cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
   partA_results <- bind_rows(partA_results, tibble(
     outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
     ci_high = pooled$ci_high, spec = "no_immediate"))
@@ -181,25 +174,22 @@ for (oname in names(ct_hosp_outcomes)) {
 for (oname in names(ct_state_outcomes)) {
   o <- ct_state_outcomes[[oname]]
 
-  cat(sprintf("  [no-immed] %s ... ", oname))
 
   atts_all <- bind_rows(map(cohorts_state, function(c) {
     tryCatch(
       run_sdid_state_ct(c, oname, ss_noimmed),
-      error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+      error = function(e) { NULL }
     )
   }))
 
   pooled <- pool_atts(atts_all)
   if (is.null(pooled)) {
-    cat("no valid cohorts\n")
     partA_results <- bind_rows(partA_results, tibble(
       outcome = o$label, att = NA_real_, ci_low = NA_real_,
       ci_high = NA_real_, spec = "no_immediate"))
     next
   }
 
-  cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
   partA_results <- bind_rows(partA_results, tibble(
     outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
     ci_high = pooled$ci_high, spec = "no_immediate"))
@@ -212,7 +202,6 @@ rm(sh_noimmed, ss_noimmed, est.dat.noimmed); gc()
 # PART B: Post-period sensitivity
 # =========================================================================
 
-cat("\n--- Part B: Post-period sensitivity (5, 4, 3, 2) ---\n")
 
 post_periods <- c(5, 4, 3, 2)
 
@@ -223,7 +212,6 @@ partB_results <- tibble(
 )
 
 for (pp_post in post_periods) {
-  cat(sprintf("\n--- post.period = %d ---\n", pp_post))
 
   sh <- stack_hosp(pre.period = 5, post.period = pp_post, state.period = state.cut)
   ss <- stack_state(pre.period = 5, post.period = pp_post, state.period = state.cut)
@@ -234,25 +222,22 @@ for (pp_post in post_periods) {
     osym <- sym(oname)
     pp  <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-    cat(sprintf("  [post=%d] %s ... ", pp_post, oname))
 
     atts_all <- bind_rows(map(cohorts_hosp, function(c) {
       tryCatch(
         run_sdid_hosp_ct(c, osym, pp, sh),
-        error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+        error = function(e) { NULL }
       )
     }))
 
     pooled <- pool_atts(atts_all)
     if (is.null(pooled)) {
-      cat("no valid cohorts\n")
       partB_results <- bind_rows(partB_results, tibble(
         outcome = o$label, att = NA_real_, ci_low = NA_real_,
         ci_high = NA_real_, post_period = as.integer(pp_post)))
       next
     }
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
     partB_results <- bind_rows(partB_results, tibble(
       outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
       ci_high = pooled$ci_high, post_period = as.integer(pp_post)))
@@ -262,25 +247,22 @@ for (pp_post in post_periods) {
   for (oname in names(ct_state_outcomes)) {
     o <- ct_state_outcomes[[oname]]
 
-    cat(sprintf("  [post=%d] %s ... ", pp_post, oname))
 
     atts_all <- bind_rows(map(cohorts_state, function(c) {
       tryCatch(
         run_sdid_state_ct(c, oname, ss),
-        error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+        error = function(e) { NULL }
       )
     }))
 
     pooled <- pool_atts(atts_all)
     if (is.null(pooled)) {
-      cat("no valid cohorts\n")
       partB_results <- bind_rows(partB_results, tibble(
         outcome = o$label, att = NA_real_, ci_low = NA_real_,
         ci_high = NA_real_, post_period = as.integer(pp_post)))
       next
     }
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
     partB_results <- bind_rows(partB_results, tibble(
       outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
       ci_high = pooled$ci_high, post_period = as.integer(pp_post)))
@@ -417,7 +399,6 @@ write_csv(partB_results, "results/diagnostics/control-timing-postperiod.csv")
 # PART C: Drop never-treated states
 # =========================================================================
 
-cat("\n--- Part C: Dropping never-treated states (state_treat_year == 0) ---\n")
 
 # Count never-treated states and their hospitals
 never_states <- est.dat %>%
@@ -425,8 +406,6 @@ never_states <- est.dat %>%
   summarize(n_states = n_distinct(MSTATE),
             n_hosp = n_distinct(ID),
             states = paste(sort(unique(MSTATE)), collapse = ", "))
-cat(sprintf("  Never-treated states: %d (%s)\n", never_states$n_states, never_states$states))
-cat(sprintf("  Hospitals in never-treated states: %d\n", never_states$n_hosp))
 
 # Count how many of those pass the bed-size filter
 never_small <- est.dat %>%
@@ -435,7 +414,6 @@ never_small <- est.dat %>%
   summarize(min_beds = min(BDTOT, na.rm = TRUE)) %>%
   filter(min_beds <= bed.cut) %>%
   nrow()
-cat(sprintf("  Of those with <= %d beds in any year: %d\n", bed.cut, never_small))
 
 # Create modified est.dat excluding never-treated states
 est.dat.noNever <- est.dat %>% filter(state_treat_year > 0)
@@ -462,25 +440,22 @@ for (oname in names(ct_hosp_outcomes)) {
   osym <- sym(oname)
   pp  <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-  cat(sprintf("  [no-never] %s ... ", oname))
 
   atts_all <- bind_rows(map(cohorts_hosp, function(c) {
     tryCatch(
       run_sdid_hosp_ct(c, osym, pp, sh_noNever),
-      error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+      error = function(e) { NULL }
     )
   }))
 
   pooled <- pool_atts(atts_all)
   if (is.null(pooled)) {
-    cat("no valid cohorts\n")
     partC_results <- bind_rows(partC_results, tibble(
       outcome = o$label, att = NA_real_, ci_low = NA_real_,
       ci_high = NA_real_, spec = "no_never_states"))
     next
   }
 
-  cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
   partC_results <- bind_rows(partC_results, tibble(
     outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
     ci_high = pooled$ci_high, spec = "no_never_states"))
@@ -490,25 +465,22 @@ for (oname in names(ct_hosp_outcomes)) {
 for (oname in names(ct_state_outcomes)) {
   o <- ct_state_outcomes[[oname]]
 
-  cat(sprintf("  [no-never] %s ... ", oname))
 
   atts_all <- bind_rows(map(cohorts_state, function(c) {
     tryCatch(
       run_sdid_state_ct(c, oname, ss_noNever),
-      error = function(e) { cat(sprintf("[cohort %d failed] ", c)); NULL }
+      error = function(e) { NULL }
     )
   }))
 
   pooled <- pool_atts(atts_all)
   if (is.null(pooled)) {
-    cat("no valid cohorts\n")
     partC_results <- bind_rows(partC_results, tibble(
       outcome = o$label, att = NA_real_, ci_low = NA_real_,
       ci_high = NA_real_, spec = "no_never_states"))
     next
   }
 
-  cat(sprintf("ATT = %.3f [%.3f, %.3f]\n", pooled$att, pooled$ci_low, pooled$ci_high))
   partC_results <- bind_rows(partC_results, tibble(
     outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
     ci_high = pooled$ci_high, spec = "no_never_states"))
@@ -559,10 +531,3 @@ ggsave("results/control-timing-nonever.png", p_partC,
 write_csv(partC_results, "results/diagnostics/control-timing-nonever.csv")
 
 
-cat("\nControl timing sensitivity complete.\n")
-cat("  Figures: results/control-timing-noimmediate.png\n")
-cat("           results/control-timing-postperiod.png\n")
-cat("           results/control-timing-nonever.png\n")
-cat("  CSVs:   results/diagnostics/control-timing-noimmediate.csv\n")
-cat("           results/diagnostics/control-timing-postperiod.csv\n")
-cat("           results/diagnostics/control-timing-nonever.csv\n")

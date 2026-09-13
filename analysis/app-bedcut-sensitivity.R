@@ -5,7 +5,6 @@
 # State outcomes excluded (bed.cut does not affect state-level analysis)
 # Expects from _run-analysis.r: stack.hosp, bed.cut, post, financial.pre, hosp.results.table
 
-cat("\n=== Bed size cutoff sensitivity analysis ===\n")
 
 # Outcome map (hospital-level only, matching 2-hospital-dd.R) ---------------
 bc_hosp_outcomes <- list(
@@ -65,27 +64,24 @@ bc_sensitivity <- tibble(
 )
 
 for (bc in bed_cuts) {
-  cat(sprintf("\n--- bed.cut = %d ---\n", bc))
 
   for (oname in names(bc_hosp_outcomes)) {
     o    <- bc_hosp_outcomes[[oname]]
     osym <- sym(oname)
     pp   <- if (!is.null(o$pre_period)) o$pre_period else 5
 
-    cat(sprintf("  [bc=%d] %s ... ", bc, oname))
 
     atts_all <- bind_rows(map(cohorts, function(c) {
       tryCatch(
         run_sdid_hosp_bc(c, osym, pp, bc),
         error = function(e) {
-          cat(sprintf("[cohort %d failed] ", c))
+          message(sprintf("bedcut sensitivity: cohort %d failed", c))
           NULL
         }
       )
     }))
 
     if (nrow(atts_all) == 0) {
-      cat("no valid cohorts\n")
       bc_sensitivity <- bind_rows(bc_sensitivity, tibble(
         outcome = o$label, att = NA_real_, ci_low = NA_real_,
         ci_high = NA_real_, bed_cut = as.integer(bc)
@@ -96,8 +92,6 @@ for (bc in bed_cuts) {
     att_w  <- with(atts_all, sum(Ntr * att) / sum(Ntr))
     se_w   <- with(atts_all, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
 
-    cat(sprintf("ATT = %.3f [%.3f, %.3f]\n",
-                att_w, att_w - 1.96 * se_w, att_w + 1.96 * se_w))
 
     bc_sensitivity <- bind_rows(bc_sensitivity, tibble(
       outcome   = o$label,
@@ -183,6 +177,3 @@ ggsave("results/bedcut-sensitivity.png", p_bc,
 write_csv(bind_rows(bc_baseline, bc_sensitivity),
           "results/diagnostics/bedcut-sensitivity.csv")
 
-cat("\nBed size cutoff sensitivity complete.\n")
-cat("  Figure: results/bedcut-sensitivity.png\n")
-cat("  CSV:    results/diagnostics/bedcut-sensitivity.csv\n")

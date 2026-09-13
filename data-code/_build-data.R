@@ -14,7 +14,7 @@
 # Preliminaries -----------------------------------------------------------
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2, tidyverse, lubridate, stringr, modelsummary, broom, janitor, here,
-               scales, zipcodeR, purrr)
+               scales, zipcodeR, purrr, zoo)
 
 source('data-code/functions.R')
 source('data-code/api-keys.R')
@@ -217,3 +217,17 @@ nearest.neighbor <- unique(aha.geo$year) %>%
   write_csv('data/output/aha_neighbors.csv')
 
 
+# AHA visit and birth volumes ---------------------------------------------------
+# Outpatient, ED, and birth counts, which the aha-data keep-list drops, read
+# from the same WRDS extract that repo reads.
+source('data-code/build-aha-visits.R')
+
+
+# Year-varying HCRIS crosswalk for CAH converters -------------------------------
+# CAH designation assigns a new provider number; this links converters' earlier
+# cost reports (needs aha_final.csv and unique_hcris.csv, written above).
+source('data-code/hcris-yearvarying-xw.R')
+
+# HCRIS financial fields on that crosswalk, keyed on ID and year ----------------
+# The estimation build derives the six financial outcomes from this file.
+source('data-code/build-hcris-financial.R')

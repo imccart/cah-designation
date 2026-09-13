@@ -1,6 +1,6 @@
-# Diagnostics: SDID vs CS Estimate Differences
-#   1. Sample size comparison (balanced panel attrition)
-#   2. Pre-trend analysis for divergent outcomes
+# Diagnostics for the SDID estimates
+#   1. Sample size before and after the balanced-panel requirement
+#   2. Pre-trend tests
 #   3. Synthetic weight concentration
 #
 # Covers hospital-level outcomes (margin, current_ratio, etc.) and
@@ -41,6 +41,8 @@ sample_comparison <- tibble(
 # --- Hospital-level outcomes ---
 for (outcome_var in hosp_outcomes) {
   outcome_sym <- sym(outcome_var)
+  ## Financial outcomes use the same pre-period as the main SDID estimates
+  pre_o <- if (outcome_var %in% fin.vars) financial.pre else 5
 
   for (c in cohorts) {
     # SDID sample (balanced panel)
@@ -49,24 +51,28 @@ for (outcome_var in hosp_outcomes) {
       group_by(ID) %>%
       mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>%
       ungroup() %>%
-      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut) %>%
+      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut,
+             stacked_event_time >= -pre_o) %>%
       select(ID, year, outcome = !!outcome_sym, treated = post_treat)
 
-    # Before balancing
+    # Before balancing. A unit is treated if it is ever post-treated; counting on
+    # the row-level indicator would put treated units in both groups via their
+    # own pre-period rows.
     pre_balance <- synth.c %>%
-      group_by(treated) %>%
-      summarize(n_hospitals = n_distinct(ID), .groups = "drop")
+      group_by(ID) %>%
+      summarize(ever_treated = max(treated), .groups = "drop")
 
     # After balancing
     bal.c <- as_tibble(makeBalancedPanel(synth.c, idname = "ID", tname = "year"))
     post_balance <- bal.c %>%
-      group_by(treated) %>%
-      summarize(n_hospitals = n_distinct(ID), .groups = "drop")
+      group_by(ID) %>%
+      summarize(ever_treated = max(treated), .groups = "drop")
 
-    sdid_treated <- post_balance %>% filter(treated == 1) %>% pull(n_hospitals)
-    sdid_control <- post_balance %>% filter(treated == 0) %>% pull(n_hospitals)
-    if (length(sdid_treated) == 0) sdid_treated <- 0
-    if (length(sdid_control) == 0) sdid_control <- 0
+    sdid_treated <- sum(post_balance$ever_treated == 1)
+    sdid_control <- sum(post_balance$ever_treated == 0)
+
+    pre_treated <- sum(pre_balance$ever_treated == 1)
+    pre_control <- sum(pre_balance$ever_treated == 0)
 
     # CS sample (unbalanced allowed, notyettreated control group)
     # Matches 2-hospital-dd.R: treat_group in c(0, 1999:2001), control_group="notyettreated"
@@ -91,13 +97,15 @@ for (outcome_var in hosp_outcomes) {
     cs_control <- cs.c %>% filter(treat_group == 0 | treat_group > c) %>% summarize(n = n_distinct(ID)) %>% pull(n)
 
     # Calculate attrition
-    pre_bal_total <- sum(pre_balance$n_hospitals)
+    pre_bal_total <- pre_treated + pre_control
     post_bal_total <- sdid_treated + sdid_control
     pct_lost <- ifelse(pre_bal_total > 0, 100 * (1 - post_bal_total / pre_bal_total), NA)
 
     sample_comparison <- bind_rows(sample_comparison, tibble(
       outcome = outcome_var,
       cohort = c,
+      pre_n_treated = pre_treated,
+      pre_n_control = pre_control,
       sdid_n_treated = sdid_treated,
       sdid_n_control = sdid_control,
       sdid_n_total = sdid_treated + sdid_control,
@@ -122,18 +130,19 @@ for (outcome_var in state_outcomes) {
                 treated = post_treat)
 
     pre_balance <- synth.c %>%
-      group_by(treated) %>%
-      summarize(n_hospitals = n_distinct(ID), .groups = "drop")
+      group_by(ID) %>%
+      summarize(ever_treated = max(treated), .groups = "drop")
 
     bal.c <- as_tibble(makeBalancedPanel(synth.c, idname = "ID", tname = "year"))
     post_balance <- bal.c %>%
-      group_by(treated) %>%
-      summarize(n_hospitals = n_distinct(ID), .groups = "drop")
+      group_by(ID) %>%
+      summarize(ever_treated = max(treated), .groups = "drop")
 
-    sdid_treated <- post_balance %>% filter(treated == 1) %>% pull(n_hospitals)
-    sdid_control <- post_balance %>% filter(treated == 0) %>% pull(n_hospitals)
-    if (length(sdid_treated) == 0) sdid_treated <- 0
-    if (length(sdid_control) == 0) sdid_control <- 0
+    sdid_treated <- sum(post_balance$ever_treated == 1)
+    sdid_control <- sum(post_balance$ever_treated == 0)
+
+    pre_treated <- sum(pre_balance$ever_treated == 1)
+    pre_control <- sum(pre_balance$ever_treated == 0)
 
     # CS sample: state.dat with notyettreated control group
     # CS uses control_group="notyettreated" on data filtered to state_treat_year %in% c(0, cohorts).
@@ -144,13 +153,15 @@ for (outcome_var in state_outcomes) {
     cs_treated <- cs.c %>% filter(state_treat_year == c) %>% summarize(n = n_distinct(state)) %>% pull(n)
     cs_control <- cs.c %>% filter(state_treat_year == 0 | state_treat_year > c) %>% summarize(n = n_distinct(state)) %>% pull(n)
 
-    pre_bal_total <- sum(pre_balance$n_hospitals)
+    pre_bal_total <- pre_treated + pre_control
     post_bal_total <- sdid_treated + sdid_control
     pct_lost <- ifelse(pre_bal_total > 0, 100 * (1 - post_bal_total / pre_bal_total), NA)
 
     sample_comparison <- bind_rows(sample_comparison, tibble(
       outcome = outcome_var,
       cohort = c,
+      pre_n_treated = pre_treated,
+      pre_n_control = pre_control,
       sdid_n_treated = sdid_treated,
       sdid_n_control = sdid_control,
       sdid_n_total = sdid_treated + sdid_control,
@@ -189,6 +200,8 @@ pretrend_results <- tibble(
 # --- Hospital-level outcomes ---
 for (outcome_var in hosp_outcomes) {
   outcome_sym <- sym(outcome_var)
+  ## Financial outcomes use the same pre-period as the main SDID estimates
+  pre_o <- if (outcome_var %in% fin.vars) financial.pre else 5
   all_cohort_data <- tibble()
 
   for (c in cohorts) {
@@ -197,7 +210,8 @@ for (outcome_var in hosp_outcomes) {
       group_by(ID) %>%
       mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>%
       ungroup() %>%
-      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut) %>%
+      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut,
+             stacked_event_time >= -pre_o) %>%
       mutate(outcome = !!outcome_sym)
 
     pre_dat <- cohort_dat %>%
@@ -363,6 +377,8 @@ weight_results <- tibble(
 # --- Hospital-level outcomes ---
 for (outcome_var in hosp_outcomes) {
   outcome_sym <- sym(outcome_var)
+  ## Financial outcomes use the same pre-period as the main SDID estimates
+  pre_o <- if (outcome_var %in% fin.vars) financial.pre else 5
 
   for (c in cohorts) {
     synth.c <- stack.hosp %>%
@@ -370,7 +386,8 @@ for (outcome_var in hosp_outcomes) {
       group_by(ID) %>%
       mutate(min_bedsize = min(BDTOT, na.rm = TRUE)) %>%
       ungroup() %>%
-      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut) %>%
+      filter(!is.na(!!outcome_sym), min_bedsize <= bed.cut,
+             stacked_event_time >= -pre_o) %>%
       select(ID, year, outcome = !!outcome_sym, treated = post_treat)
 
     bal.c <- tryCatch({
@@ -485,7 +502,7 @@ fmt_pct <- function(x) sprintf("%.1f\\%%", x)
 tex_sample <- c(
   "\\begin{tabular}{l c cc cc c}",
   "\\toprule",
-  " & & \\multicolumn{2}{c}{SDID} & \\multicolumn{2}{c}{CS} & \\\\",
+  " & & \\multicolumn{2}{c}{Before balancing} & \\multicolumn{2}{c}{SDID panel} & \\\\",
   "\\cmidrule(lr){3-4} \\cmidrule(lr){5-6}",
   "Outcome & Cohort & Treated & Control & Treated & Control & \\% Lost \\\\",
   "\\midrule",
@@ -512,8 +529,8 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
       tex_sample <- c(tex_sample,
         sprintf("%s & %d & %d & %d & %d & %d & %s \\\\",
                 lab, r$cohort,
+                r$pre_n_treated, r$pre_n_control,
                 r$sdid_n_treated, r$sdid_n_control,
-                r$cs_n_treated, r$cs_n_control,
                 fmt_pct(r$pct_lost_to_balance)))
     }
   }
