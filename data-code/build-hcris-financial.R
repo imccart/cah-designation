@@ -86,6 +86,10 @@ hcris.reports <- hcris %>%
   distinct(MCRNUM, year) %>%
   mutate(old_report = TRUE)
 
+## Hospitals whose pre-designation provider number is a strict match (name score
+## at or above 0.90, or an exact zip with a score at or above 0.75).
+n_strict <- xw %>% filter(!is.na(match_strict), match_strict) %>% distinct(ID) %>% nrow()
+
 read_csv('data/output/aha_final.csv', show_col_types = FALSE,
          col_types = cols(ID = col_character()),
          col_select = c(ID, year, eff_year)) %>%
@@ -100,5 +104,6 @@ read_csv('data/output/aha_final.csv', show_col_types = FALSE,
   summarise(hospital_years = n(),
             hospitals = n_distinct(ID),
             share_old_link = mean(coalesce(old_report, FALSE)),
-            share_new_link = mean(coalesce(new_report, FALSE))) %>%
+            share_new_link = mean(coalesce(new_report, FALSE)),
+            hospitals_strict = n_strict) %>%
   write_csv('data/output/hcris_crosswalk_coverage.csv')

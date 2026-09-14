@@ -254,6 +254,13 @@ mg <- est.dat %>% filter(year >= 1994, year <= 1996) %>% group_by(MSTATE) %>% su
 adopt <- st96 %>% left_join(cl, by = "MSTATE") %>% left_join(cl_change, by = "MSTATE") %>% left_join(mg, by = "MSTATE") %>% left_join(u_state, by = "MSTATE") %>%
   mutate(cohort = case_when(first_obs == 0 ~ "Never", first_obs < 1999 ~ "Before 1999", first_obs > 2001 ~ "After 2001", TRUE ~ as.character(first_obs)))
 write_csv(adopt, "results/diagnostics/adoption-timing-states.csv")
+## State counts quoted in the abstract and Section 3.3: adopting states, states
+## with a designation by 1995, and states whose program began in 1999-2002.
+write_csv(adopt %>% summarise(n_states = n(),
+                              n_adopting = sum(first_obs > 0),
+                              n_by_1995 = sum(first_obs > 0 & first_obs <= 1995),
+                              n_1999_2002 = sum(first_obs >= 1999 & first_obs <= 2002)),
+          "results/diagnostics/adoption-timing-summary.csv")
 adopt_vars <- c(share_rural = "Share of hospitals rural", n_small = "Hospitals with 50 or fewer beds", mean_beds = "Mean beds", share_gov = "Share government-owned",
                 mean_dist = "Miles to nearest hospital", closure_rate = "Closures per 100 hospital-years, 1990-96", d_closure = "Change in closure rate, 1990-93 to 1994-96",
                 margin_94_96 = "Operating margin, 1994-96", u_94_96 = "Unemployment rate, 1994-96", d_u_late = "Change in unemployment, 1994-96 to 1997-98")
@@ -351,13 +358,19 @@ if (exists("delta_B") && exists("delta_C")) {
   closer_beds_lag <- est.dat %>% arrange(ID, year) %>% group_by(ID) %>%
     mutate(beds_lag = lag(BDTOT), year_lag = lag(year)) %>% ungroup() %>%
     filter(closed == 1, year >= 1995, year <= 2010, !is.na(beds_lag), year_lag == year - 1)
+  ## The last scenario draws the marginal closer from every closing hospital
+  ## (mean 123 beds, Table G1). It goes to the CSV but not the paper's table,
+  ## which keeps to hospital sizes within the program's reach.
   scen <- tibble(scenario = c("Mean converter before designation (baseline)", "Closers with 50 or fewer beds, mean", "Rural closers, mean",
-                              "Smallest hospitals: 25th percentile of small hospitals", "Smallest hospitals: 10th percentile of small hospitals"),
+                              "Smallest hospitals: 25th percentile of small hospitals", "Smallest hospitals: 10th percentile of small hospitals",
+                              "All closers, mean"),
                  B = c(B_close, mean(closer_beds_lag$beds_lag[closer_beds_lag$beds_lag <= 50]), mean(closer_beds_lag$beds_lag[closer_beds_lag$ever_rural == 1], na.rm = TRUE),
-                       quantile(small98, 0.25, na.rm = TRUE), quantile(small98, 0.10, na.rm = TRUE))) %>%
+                       quantile(small98, 0.25, na.rm = TRUE), quantile(small98, 0.10, na.rm = TRUE),
+                       mean(closer_beds_lag$beds_lag))) %>%
     mutate(rho_star = (abs(delta_C) / 100 * B) / abs(delta_B), net_beds = (-delta_C / 100) * B + 0.30 * delta_B)
   write_csv(scen, "results/diagnostics/breakeven-sensitivity.csv")
   scen_lines <- scen %>%
+    filter(scenario != "All closers, mean") %>%
     rowwise() %>%
     mutate(line = sprintf("%s & %.0f & %.3f & %.2f \\\\", scenario, B, rho_star, net_beds)) %>%
     pull(line)

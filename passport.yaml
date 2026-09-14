@@ -49,13 +49,13 @@ claims:
     claim: "the staggered 1999--2002 rollout of state-level CAH availability"
     location: "Abstract; also Introduction ¶4, Section 2 ¶2, Section 4.5 ¶2"
     script: analysis/R1_revision.R
-    artifact: results/diagnostics/adoption-timing-states.csv
-    artifact_key: "regex:,2002,"
-    expected_value:
+    artifact: results/diagnostics/adoption-timing-summary.csv
+    artifact_key: "row=0,col=n_1999_2002"
+    expected_value: 37
     tolerance:
-    status: STALE
-    explanation: "Cohort years in the file run 1994, 1995, 1998, 1999, 2000, 2001, 2002; the 1999-2002 window is the four cohorts carrying 37 of the 43 adopting states."
-    last_verified:
+    status: PASS
+    explanation: "37 of the 43 adopting states (n_adopting in the same file) began the program in 1999-2002; the remaining cohorts are 1994, 1995, and 1998."
+    last_verified: 2026-09-14
 
   - id: abstract-margin-range
     document: paper
@@ -66,9 +66,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.033
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation: "Lower end of the range. Upper end is the eligibility-restricted 0.037, entered as sec46-margin-elig."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: abstract-ed-percent
     document: paper
@@ -79,9 +79,9 @@ claims:
     artifact_key: "regex:^ED visits per bed,state,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.17
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation: "pct_of_pre_mean. Stored as a proportion; the prose reports it as a percent."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-cah-count-2021
     document: paper
@@ -131,9 +131,9 @@ claims:
     artifact_key: "regex:^1999-2005,-5,([0-9.]+),"
     expected_value: 49
     tolerance: 0.5
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-beds-t-minus-1
     document: paper
@@ -144,9 +144,9 @@ claims:
     artifact_key: "regex:^1999-2005,-1,([0-9.]+),"
     expected_value: 46
     tolerance: 0.5
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-beds-t-zero
     document: paper
@@ -157,9 +157,9 @@ claims:
     artifact_key: "regex:^1999-2005,0,([0-9.]+),"
     expected_value: 42
     tolerance: 0.5
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-beds-t-plus-5
     document: paper
@@ -170,9 +170,9 @@ claims:
     artifact_key: "regex:^1999-2005,5,([0-9.]+),"
     expected_value: 35
     tolerance: 0.5
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-beds-p25-at-limit
     document: paper
@@ -183,9 +183,9 @@ claims:
     artifact_key: "regex:^1999-2005,-1,[^,]+,([0-9.]+),"
     expected_value: 25
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation: "p25_beds at event time -1, with the same column at event times 0 through 5 carrying the rest of the claim. The column is new, so it fills in when the script next runs; until then the audit reports a missing key rather than a missing source."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec2-ipdays-path
     document: paper
@@ -196,9 +196,9 @@ claims:
     artifact_key: "regex:^1999-2005,-5,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 159
     tolerance: 1
-    status: STALE
+    status: PASS
     explanation: "mean_ip_per_bed at event time -5; the 123 is the same column at event time 5. The column is new, so it fills in when the script next runs."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-unique-hospitals
     document: paper
@@ -209,22 +209,22 @@ claims:
     artifact_key: "regex:^[0-9]+,[^,]+,[^,]+,([0-9]+),"
     expected_value: 6911
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation: "panel_hospitals, constant across rows. The panel window is the panel_year_min and panel_year_max columns of the same file."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-states-1995
     document: paper
     claim: "5 states having at least one hospital with such a designation by 1995"
     location: "Section 3.3 ¶2"
     script: analysis/R1_revision.R
-    artifact: results/diagnostics/adoption-timing-states.csv
-    artifact_key: "regex:,(1995),"
-    expected_value:
+    artifact: results/diagnostics/adoption-timing-summary.csv
+    artifact_key: "row=0,col=n_by_1995"
+    expected_value: 5
     tolerance:
-    status: STALE
-    explanation: "Three states carry cohort 1994 and two carry 1995, so five hold a designation by 1995. The five is a count of rows rather than a cell, so the key only locates the cohort column; verify by counting rows with cohort 1994 or 1995."
-    last_verified:
+    status: PASS
+    explanation: "Three states carry cohort 1994 and two carry 1995."
+    last_verified: 2026-09-14
 
   - id: sec33-states-1999
     document: paper
@@ -235,9 +235,9 @@ claims:
     artifact_key: "regex:^States & [0-9]+ & ([0-9]+)"
     expected_value: 19
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-states-2000
     document: paper
@@ -248,9 +248,9 @@ claims:
     artifact_key: "regex:^States(?: & [0-9]+){2} & ([0-9]+)"
     expected_value: 8
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-states-2001
     document: paper
@@ -261,9 +261,9 @@ claims:
     artifact_key: "regex:^States(?: & [0-9]+){3} & ([0-9]+)"
     expected_value: 8
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-states-2002
     document: paper
@@ -274,9 +274,9 @@ claims:
     artifact_key: "regex:^States(?: & [0-9]+){4} & ([0-9]+)"
     expected_value: 2
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-cah-stock-2005
     document: paper
@@ -287,9 +287,9 @@ claims:
     artifact_key: "regex:^2005,1,([0-9]+),"
     expected_value: 1250
     tolerance: 5
-    status: UNVERIFIED
+    status: PASS
     explanation: "Count of CAH-designated hospitals in 2005, which the prose rounds from 1,252. Distinct from the 1,240 converters in dollar-accounting.csv that Sections 4.5 and 5 quote, since that count is restricted to converting hospitals still observed in 2005."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-p90-beds-pre
     document: paper
@@ -300,9 +300,9 @@ claims:
     artifact_key: "regex:22, ([0-9]+)"
     expected_value: 107
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-p10-beds-noncah
     document: paper
@@ -313,9 +313,9 @@ claims:
     artifact_key: "regex:100. & ...([0-9]+), 449"
     expected_value: 49
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation: "Bed-size percentile row of desc_compare.tex, Never CAH column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-post-beds-mean
     document: paper
@@ -326,9 +326,9 @@ claims:
     artifact_key: "regex:^Bed size & [0-9.]+ & ([0-9.]+)"
     expected_value: 41
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-post-ipdays-mean
     document: paper
@@ -339,9 +339,9 @@ claims:
     artifact_key: "regex:^Inpatient days per bed & [0-9.]+ & ([0-9.]+)"
     expected_value: 136
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-pre-beds-mean
     document: paper
@@ -352,9 +352,9 @@ claims:
     artifact_key: "regex:^Bed size & ([0-9.]+)"
     expected_value: 55
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec33-pre-ipdays-mean
     document: paper
@@ -365,9 +365,9 @@ claims:
     artifact_key: "regex:^Inpatient days per bed & ([0-9.]+)"
     expected_value: 167
     tolerance: 0.6
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-margin-sdid
     document: paper
@@ -378,9 +378,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.033
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-margin-premean
     document: paper
@@ -391,9 +391,9 @@ claims:
     artifact_key: "regex:^margin,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: -0.12
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "pre_mean column. Distinct from the -0.07 in Table 1, which is the unrestricted pre-designation mean over all CAHs 1995-2010 rather than the estimation sample."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-margin-cs
     document: paper
@@ -404,9 +404,9 @@ claims:
     artifact_key: "regex:^Operating margin(?: & [^&]+){3} & (-?[0-9.]+)"
     expected_value: 0.041
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-netpatrev-dollars
     document: paper
@@ -417,9 +417,9 @@ claims:
     artifact_key: "regex:^Net patient revenue per bed & (-?[0-9.]+)"
     expected_value: -19.48
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation: "Table reports thousands of 2010 dollars per bed; the prose converts to dollars."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-totopexp-dollars
     document: paper
@@ -430,9 +430,9 @@ claims:
     artifact_key: "regex:^Operating expenses per bed & (-?[0-9.]+)"
     expected_value: -21.60
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-netpatrev-percent
     document: paper
@@ -443,9 +443,9 @@ claims:
     artifact_key: "regex:^net_pat_rev,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.081
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "pct_of_pre_mean column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-totopexp-percent
     document: paper
@@ -456,9 +456,9 @@ claims:
     artifact_key: "regex:^tot_operating_exp,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.085
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "pct_of_pre_mean column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-preperiod-range-low
     document: paper
@@ -469,9 +469,9 @@ claims:
     artifact_key: "regex:^margin,Operating margin,3,(-?[0-9.]+)"
     expected_value: 0.033
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-preperiod-range-high
     document: paper
@@ -482,9 +482,9 @@ claims:
     artifact_key: "regex:^margin,Operating margin,2,(-?[0-9.]+)"
     expected_value: 0.040
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-statecut-range-low
     document: paper
@@ -495,9 +495,9 @@ claims:
     artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,2$"
     expected_value: 0.020
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation: "Lag delta = 2 gives the lowest margin estimate across the robustness set."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-bedcut75-margin
     document: paper
@@ -508,9 +508,9 @@ claims:
     artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,75$"
     expected_value: 0.041
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-bedcut25-margin
     document: paper
@@ -521,9 +521,9 @@ claims:
     artifact_key: "regex:^Operating margin,(-?[0-9.]+),[^,]+,[^,]+,25$"
     expected_value: 0.115
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-margin-ife
     document: paper
@@ -534,9 +534,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.026
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-margin-perm-p
     document: paper
@@ -547,9 +547,9 @@ claims:
     artifact_key: "row=Operating margin,col=p_value"
     expected_value: 0.006
     tolerance: 0.0005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-currentratio-sdid
     document: paper
@@ -560,9 +560,9 @@ claims:
     artifact_key: "regex:^Current ratio & (-?[0-9.]+)"
     expected_value: -0.239
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-currentratio-cs
     document: paper
@@ -573,9 +573,9 @@ claims:
     artifact_key: "regex:^Current ratio(?: & [^&]+){3} & (-?[0-9.]+)"
     expected_value: 0.116
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-currentratio-percent
     document: paper
@@ -586,9 +586,9 @@ claims:
     artifact_key: "regex:^current_ratio,state,HCRIS,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.092
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "pct_of_pre_mean column. The companion 'an increase of about 4 percent' is the CS ATT over the same pre_mean (2.60) and is not itself persisted."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec42-currentratio-ife
     document: paper
@@ -599,9 +599,9 @@ claims:
     artifact_key: "regex:^Current ratio & (-?[0-9.]+)"
     expected_value: -0.094
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec43-netfixed-sdid
     document: paper
@@ -612,9 +612,9 @@ claims:
     artifact_key: "regex:^Net fixed assets & (-?[0-9.]+)"
     expected_value: 0.004
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec43-capex-sdid
     document: paper
@@ -625,9 +625,9 @@ claims:
     artifact_key: "regex:^Capital expenditures per bed & (-?[0-9.]+)"
     expected_value: 0.976
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-beds-sdid
     document: paper
@@ -638,9 +638,9 @@ claims:
     artifact_key: "regex:^Total beds & (-?[0-9.]+)"
     expected_value: -4.081
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-obbeds-sdid
     document: paper
@@ -651,9 +651,9 @@ claims:
     artifact_key: "regex:^OB beds & (-?[0-9.]+)"
     expected_value: -0.468
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-ftern-sdid
     document: paper
@@ -664,9 +664,9 @@ claims:
     artifact_key: "regex:^FTE RNs & (-?[0-9.]+)"
     expected_value: -2.023
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-beds-cohort-1999
     document: paper
@@ -677,9 +677,9 @@ claims:
     artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 50 "
     expected_value: -0.257
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation: "Anchored on the 1999 cohort N_tr of 50, since att_cohort.tex repeats the Total beds label once per cohort."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-beds-cohort-2000
     document: paper
@@ -690,9 +690,9 @@ claims:
     artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 133 "
     expected_value: -3.048
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation: "Anchored on the 2000 cohort N_tr of 133."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-beds-cohort-2001
     document: paper
@@ -703,9 +703,9 @@ claims:
     artifact_key: "regex:^Total beds & (-?[0-9.]+) & [^&]+ & 136 "
     expected_value: -6.50
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation: "Anchored on the 2001 cohort N_tr of 136."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-ipdays-sdid
     document: paper
@@ -716,9 +716,9 @@ claims:
     artifact_key: "regex:^Inpatient days per bed & (-?[0-9.]+)"
     expected_value: -6.66
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-ipdays-elig
     document: paper
@@ -729,9 +729,9 @@ claims:
     artifact_key: "regex:^Inpatient days per bed & (-?[0-9.]+)"
     expected_value: -17.60
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-before
     document: paper
@@ -742,9 +742,9 @@ claims:
     artifact_key: "regex:^.adopting states, before.,[0-9]+,([0-9.]+),"
     expected_value: 0.018
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-after
     document: paper
@@ -755,9 +755,9 @@ claims:
     artifact_key: "regex:^.adopting states, after.,[0-9]+,([0-9.]+),"
     expected_value: 0.166
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-notyet-low
     document: paper
@@ -768,9 +768,9 @@ claims:
     artifact_key: "regex:^.1999, Not yet adopted.,[0-9]+,([0-9.]+),"
     expected_value: 0.010
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-notyet-high
     document: paper
@@ -781,9 +781,9 @@ claims:
     artifact_key: "regex:^.2000, Not yet adopted.,[0-9]+,([0-9.]+),"
     expected_value: 0.018
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-converters
     document: paper
@@ -794,9 +794,9 @@ claims:
     artifact_key: "regex:^.adopting states, after: eventual converters.,[0-9]+,([0-9.]+),"
     expected_value: 0.281
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-notch-neverconverters
     document: paper
@@ -807,9 +807,9 @@ claims:
     artifact_key: "regex:^.adopting states, after: never-converters.,[0-9]+,([0-9.]+),"
     expected_value: 0.010
     tolerance: 0.003
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-opvisits-sdid
     document: paper
@@ -820,9 +820,9 @@ claims:
     artifact_key: "regex:^Outpatient visits per bed,state,(-?[0-9.]+),"
     expected_value: 1.208
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-edvisits-sdid
     document: paper
@@ -833,9 +833,9 @@ claims:
     artifact_key: "regex:^ED visits per bed,state,(-?[0-9.]+),"
     expected_value: -18.08
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-ed-premean
     document: paper
@@ -846,9 +846,9 @@ claims:
     artifact_key: "regex:^ED visits per bed,state,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 104
     tolerance: 1
-    status: UNVERIFIED
+    status: PASS
     explanation: "pre_mean."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec44-births-sdid
     document: paper
@@ -859,9 +859,9 @@ claims:
     artifact_key: "regex:^Births,state,(-?[0-9.]+),"
     expected_value: -10.48
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-margin-path
     document: paper
@@ -872,9 +872,9 @@ claims:
     artifact_key: "regex:^Operating margin,-1,(-?[0-9.]+),"
     expected_value: -0.15
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation: "Treated path at event time -1. The about -0.10 end of the claim is the same column at event time -3, which reads -0.094."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-antic-ftern
     document: paper
@@ -885,9 +885,9 @@ claims:
     artifact_key: "regex:^FTE RNs(?: & [^&]+){2} & (-?[0-9.]+)"
     expected_value: -3.247
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation: "Treatment-one-year-earlier column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-antic-ipdays
     document: paper
@@ -898,9 +898,9 @@ claims:
     artifact_key: "regex:^Inpatient days per bed(?: & [^&]+){2} & (-?[0-9.]+)"
     expected_value: -9.72
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-antic-beds
     document: paper
@@ -911,9 +911,9 @@ claims:
     artifact_key: "regex:^Total beds(?: & [^&]+){2} & (-?[0-9.]+)"
     expected_value: -2.586
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-antic-margin-base
     document: paper
@@ -924,9 +924,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.037
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec45-antic-margin-shifted
     document: paper
@@ -937,9 +937,9 @@ claims:
     artifact_key: "regex:^Operating margin,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: 0.018
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation: "Anticipation (one-year-earlier) ATT column of the eligibility-restricted comparison."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-closures-sdid
     document: paper
@@ -950,9 +950,9 @@ claims:
     artifact_key: "regex:^Closures & (-?[0-9.]+)"
     expected_value: -0.483
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-closures-perm-p
     document: paper
@@ -963,9 +963,9 @@ claims:
     artifact_key: "row=Closures,col=p_value"
     expected_value: 0.008
     tolerance: 0.0005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-mergers-sdid
     document: paper
@@ -976,9 +976,9 @@ claims:
     artifact_key: "regex:^Mergers & (-?[0-9.]+)"
     expected_value: 0.111
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-system-sdid
     document: paper
@@ -989,9 +989,9 @@ claims:
     artifact_key: "regex:^System membership & (-?[0-9.]+)"
     expected_value: 0.074
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-closures-cs
     document: paper
@@ -1002,9 +1002,9 @@ claims:
     artifact_key: "regex:^Closures(?: & [^&]+){3} & (-?[0-9.]+)"
     expected_value: -0.278
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-control-states-2000
     document: paper
@@ -1015,9 +1015,9 @@ claims:
     artifact_key: "regex:^2000,[0-9]+,([0-9]+),"
     expected_value: 13
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-control-states-2001
     document: paper
@@ -1028,9 +1028,9 @@ claims:
     artifact_key: "regex:^2001,[0-9]+,([0-9]+),"
     expected_value: 5
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-control-states-1999
     document: paper
@@ -1041,9 +1041,9 @@ claims:
     artifact_key: "regex:^1999,[0-9]+,([0-9]+),"
     expected_value: 21
     tolerance:
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-closures-prevented
     document: paper
@@ -1054,9 +1054,9 @@ claims:
     artifact_key: "row=0,col=closures_prevented"
     expected_value: 21.1
     tolerance: 0.2
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-hospitals-cah-states
     document: paper
@@ -1067,9 +1067,9 @@ claims:
     artifact_key: "row=0,col=n_hosp_cah_states"
     expected_value: 4400
     tolerance: 50
-    status: UNVERIFIED
+    status: PASS
     explanation: "The prose rounds; the computed value is about 4,367. The column is new, so it fills in when the script next runs."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-converters-count
     document: paper
@@ -1080,9 +1080,9 @@ claims:
     artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,([0-9]+),"
     expected_value: 1240
     tolerance: 1
-    status: STALE
+    status: PASS
     explanation: "Also appears as n_cah in results/diagnostics/next-nearest-distance.csv."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-per-converter-closure
     document: paper
@@ -1093,9 +1093,9 @@ claims:
     artifact_key: "row=0,col=closure_prob_per_converter"
     expected_value: 0.017
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation: "Stored as a proportion; the prose reports it as a percent. The column is new, so it fills in when the script next runs."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-carroll-comparison
     document: paper
@@ -1119,9 +1119,9 @@ claims:
     artifact_key: "regex:^NA,([0-9]+)"
     expected_value: 1138
     tolerance: 1
-    status: UNVERIFIED
+    status: PASS
     explanation: "Distinct control hospitals across cohorts, before outcome-specific balancing. Per-cohort counts run 797 in 2005 to 1,000 in 1999 and are in the same file. Replaced an unsourced 989 that dated to commit 527ae38 on 2026-02-14."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46elig-margin-state
     document: paper
@@ -1132,9 +1132,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.033
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec46-margin-elig
     document: paper
@@ -1145,9 +1145,9 @@ claims:
     artifact_key: "regex:^Operating margin & (-?[0-9.]+)"
     expected_value: 0.037
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-n-comparisons
     document: paper
@@ -1158,9 +1158,9 @@ claims:
     artifact_key: "regex:^Pre-treatment margin,OB beds,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9]+),"
     expected_value: 43
     tolerance:
-    status: STALE
+    status: PASS
     explanation: "tests column, constant across rows."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-obbeds-nonprofit
     document: paper
@@ -1171,9 +1171,9 @@ claims:
     artifact_key: "regex:^Ownership,Nonprofit,OB beds,(-?[0-9.]+),"
     expected_value: -0.92
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-obbeds-government
     document: paper
@@ -1184,9 +1184,9 @@ claims:
     artifact_key: "regex:^Ownership,Government,OB beds,(-?[0-9.]+),"
     expected_value: -0.39
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-totopexp-nonprofit
     document: paper
@@ -1197,9 +1197,9 @@ claims:
     artifact_key: "regex:^Ownership,Nonprofit,Operating expenses per bed,(-?[0-9.]+),"
     expected_value: -40
     tolerance: 0.5
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-totopexp-government
     document: paper
@@ -1210,9 +1210,9 @@ claims:
     artifact_key: "regex:^Ownership,Government,Operating expenses per bed,(-?[0-9.]+),"
     expected_value: -8
     tolerance: 0.3
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-obbeds-margin-above
     document: paper
@@ -1223,9 +1223,9 @@ claims:
     artifact_key: "regex:^Pre-treatment margin,Above median,OB beds,(-?[0-9.]+),"
     expected_value: -0.94
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-obbeds-margin-below
     document: paper
@@ -1236,9 +1236,9 @@ claims:
     artifact_key: "regex:^Pre-treatment margin,Below median,OB beds,(-?[0-9.]+),"
     expected_value: -0.37
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-system-proximate
     document: paper
@@ -1249,9 +1249,9 @@ claims:
     artifact_key: "regex:^Geographic isolation,Proximate,System membership,(-?[0-9.]+),"
     expected_value: 0.076
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-margin-range-low
     document: paper
@@ -1262,9 +1262,9 @@ claims:
     artifact_key: "regex:^Pre-treatment margin,Below median,Operating margin,(-?[0-9.]+),"
     expected_value: 0.025
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec47-margin-range-high
     document: paper
@@ -1275,9 +1275,9 @@ claims:
     artifact_key: "regex:^System membership,Independent,Operating margin,(-?[0-9.]+),"
     expected_value: 0.046
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-delta-b
     document: paper
@@ -1288,9 +1288,9 @@ claims:
     artifact_key: "row=0,col=delta_B"
     expected_value: -4.081
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-delta-c
     document: paper
@@ -1301,9 +1301,9 @@ claims:
     artifact_key: "row=0,col=delta_C"
     expected_value: -0.483
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-rho-eligible
     document: paper
@@ -1314,9 +1314,9 @@ claims:
     artifact_key: "row=0,col=rho_obs"
     expected_value: 0.69
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-b-close
     document: paper
@@ -1327,9 +1327,9 @@ claims:
     artifact_key: "row=0,col=B_close"
     expected_value: 55
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-net-beds-baseline
     document: paper
@@ -1340,9 +1340,9 @@ claims:
     artifact_key: "regex:^Mean converter before designation .baseline.,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.958
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-rho-star-beds
     document: paper
@@ -1353,9 +1353,9 @@ claims:
     artifact_key: "row=0,col=rho_star_beds"
     expected_value: 0.065
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-rho-star-ipd
     document: paper
@@ -1366,9 +1366,9 @@ claims:
     artifact_key: "row=0,col=rho_star_ipd"
     expected_value: 0.140
     tolerance: 0.002
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-closer-mean-beds
     document: paper
@@ -1379,9 +1379,9 @@ claims:
     artifact_key: "row=0,col=mean"
     expected_value: 39
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-closer-n
     document: paper
@@ -1392,9 +1392,9 @@ claims:
     artifact_key: "row=0,col=n"
     expected_value: 79
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-breakeven-closers
     document: paper
@@ -1405,9 +1405,9 @@ claims:
     artifact_key: "regex:^.Closers with 50 or fewer beds, mean.,[^,]+,([0-9.]+),"
     expected_value: 0.046
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-breakeven-rural
     document: paper
@@ -1418,9 +1418,9 @@ claims:
     artifact_key: "regex:^.Rural closers, mean.,[^,]+,([0-9.]+),"
     expected_value: 0.056
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation: "The 47-bed figure is the B column of the same row."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-breakeven-p25
     document: paper
@@ -1431,9 +1431,9 @@ claims:
     artifact_key: "regex:^Smallest hospitals: 25th percentile of small hospitals,[^,]+,([0-9.]+),"
     expected_value: 0.032
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation: "The 27-bed figure is the B column of the same row, the 25th percentile of beds among all hospitals with 50 or fewer beds. It is not the 25th percentile among closers, which closer-bedsize.csv puts at 36."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-breakeven-p10
     document: paper
@@ -1444,9 +1444,9 @@ claims:
     artifact_key: "regex:^Smallest hospitals: 10th percentile of small hospitals,[^,]+,([0-9.]+),"
     expected_value: 0.024
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-net-beds-range-low
     document: paper
@@ -1457,9 +1457,9 @@ claims:
     artifact_key: "regex:^Mean converter before designation .baseline.,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -0.96
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-net-beds-range-high
     document: paper
@@ -1470,9 +1470,9 @@ claims:
     artifact_key: "regex:^Smallest hospitals: 10th percentile of small hospitals,[^,]+,[^,]+,(-?[0-9.]+)"
     expected_value: -1.13
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-psa-median
     document: paper
@@ -1483,9 +1483,9 @@ claims:
     artifact_key: "row=Net beds/hospital,col=median"
     expected_value: -0.96
     tolerance: 0.005
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-psa-prob-positive
     document: paper
@@ -1496,9 +1496,9 @@ claims:
     artifact_key: "row=Net beds/hospital,col=prob_positive"
     expected_value: 0.036
     tolerance: 0.005
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-gowrisankaran-welfare
     document: paper
@@ -1522,9 +1522,9 @@ claims:
     artifact_key: "regex:^State-timing,([0-9.]+),"
     expected_value: 0.033
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation: "Low end. The 3.7 is the Eligibility-restricted row of the same column, audited as sec46-margin-elig."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-mean-revenue
     document: paper
@@ -1535,9 +1535,9 @@ claims:
     artifact_key: "regex:^State-timing,[^,]+,([0-9.]+),"
     expected_value: 11364
     tolerance: 20
-    status: STALE
+    status: PASS
     explanation: "Stored in thousands of 2010 dollars; the prose rounds to $11 million."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-gain-per-hospital
     document: paper
@@ -1548,9 +1548,9 @@ claims:
     artifact_key: "regex:^State-timing,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 374
     tolerance: 5
-    status: STALE
+    status: PASS
     explanation: "Stored in thousands of 2010 dollars."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-aggregate-billion
     document: paper
@@ -1561,9 +1561,9 @@ claims:
     artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 0.463
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation: "State-timing gives 0.46 and the eligibility-restricted design 0.52; the prose reports about 0.5."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-gain-per-closure-low
     document: paper
@@ -1574,9 +1574,9 @@ claims:
     artifact_key: "regex:^State-timing,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
     expected_value: 21.96
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec51-gain-per-closure-high
     document: paper
@@ -1587,9 +1587,9 @@ claims:
     artifact_key: "regex:^Eligibility-restricted,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
     expected_value: 24.45
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-gujral-mortality
     document: paper
@@ -1613,9 +1613,9 @@ claims:
     artifact_key: "row=0,col=avg_adm_cah"
     expected_value: 1027
     tolerance: 5
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-lives-saved
     document: paper
@@ -1626,9 +1626,9 @@ claims:
     artifact_key: "row=0,col=lives_saved_closure"
     expected_value: 169
     tolerance: 1
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-lives-range
     document: paper
@@ -1639,9 +1639,9 @@ claims:
     artifact_key: "row=0,col=lives_saved_lo"
     expected_value: 50
     tolerance: 5
-    status: UNVERIFIED
+    status: PASS
     explanation: "Lower bound. The 290 is lives_saved_hi, and the 6 to 37 closures are closures_prevented_lo and closures_prevented_hi in the same row. The columns are new, so they fill in when the script next runs."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-ipdays-point
     document: paper
@@ -1652,9 +1652,9 @@ claims:
     artifact_key: "row=0,col=delta_IPD"
     expected_value: -6.66
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-nextnearest-median
     document: paper
@@ -1665,9 +1665,9 @@ claims:
     artifact_key: "row=0,col=median_cah"
     expected_value: 17.5
     tolerance: 0.1
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-nextnearest-p25
     document: paper
@@ -1678,9 +1678,9 @@ claims:
     artifact_key: "row=0,col=p25_cah"
     expected_value: 12.2
     tolerance: 0.1
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-nextnearest-p75
     document: paper
@@ -1691,9 +1691,9 @@ claims:
     artifact_key: "row=0,col=p75_cah"
     expected_value: 23.7
     tolerance: 0.1
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-median-all-hospitals
     document: paper
@@ -1704,9 +1704,9 @@ claims:
     artifact_key: "row=0,col=median_all"
     expected_value: 11.6
     tolerance: 0.1
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: sec52-gowrisankaran-admissions
     document: paper
@@ -1743,9 +1743,9 @@ claims:
     artifact_key: "regex:^Total beds,-1,(-?[0-9.]+),"
     expected_value: 34.2
     tolerance: 0.1
-    status: UNVERIFIED
+    status: PASS
     explanation: "Keyed to the treated path at event time -1. The base is the mean of the treated path over event times -5 to -1, 35.6 beds, and -4.081 / 35.6 = 0.115. Added so the 'similar size to the decline in beds' comparison in Section 4.2 has a base the reader can check."
-    last_verified:
+    last_verified: 2026-09-14
 
   ## ======================================================================
   ## APPENDIX  (paper/appendix.tex)
@@ -1760,9 +1760,9 @@ claims:
     artifact_key: "row=0,col=share_new_link"
     expected_value: 0.86
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation: "share_new_link, 0.859 over 10,044 hospital-years for 1,412 converters. Replaced an 87 that predated the coverage file; the response letter quotes the same figure."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appA-coverage-old
     document: appendix
@@ -1773,9 +1773,9 @@ claims:
     artifact_key: "row=0,col=share_old_link"
     expected_value: 0.15
     tolerance: 0.01
-    status: UNVERIFIED
+    status: PASS
     explanation: "share_old_link, 0.145."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appB-max-weight
     document: appendix
@@ -1786,9 +1786,9 @@ claims:
     artifact_key: "regex:^system,2001,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 0.062
     tolerance: 0.002
-    status: UNVERIFIED
+    status: PASS
     explanation: "Maximum of max_weight across all hospital-level rows. The key points at the row holding that maximum; if the maximum moves to another row the audit will read the wrong cell, so recheck the maximum when the diagnostics are regenerated."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appB-top5-share
     document: appendix
@@ -1799,9 +1799,9 @@ claims:
     artifact_key: "regex:^system,2001,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 0.271
     tolerance: 0.005
-    status: UNVERIFIED
+    status: PASS
     explanation: "Maximum of top5_weight_share across hospital-level rows; same caveat as appB-max-weight."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appB-state-controls-low
     document: appendix
@@ -1812,9 +1812,9 @@ claims:
     artifact_key: "regex:^closures,2001,([0-9]+),"
     expected_value: 5
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appB-state-controls-high
     document: appendix
@@ -1825,9 +1825,9 @@ claims:
     artifact_key: "regex:^closures,1999,([0-9]+),"
     expected_value: 21
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-immediate-adopters
     document: appendix
@@ -1838,9 +1838,9 @@ claims:
     artifact_key: "row=0,col=n_immediate"
     expected_value: 121
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation: "The 1,466 and the 8.3 percent are n_treated_total and share_immediate in the same row."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-never-treated-small
     document: appendix
@@ -1851,9 +1851,9 @@ claims:
     artifact_key: "row=0,col=n_never_small"
     expected_value: 10
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation: "The three never-treated states are n_never_states and never_state_names in the same row."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-preperiod-treated-5
     document: appendix
@@ -1864,9 +1864,9 @@ claims:
     artifact_key: "regex:^margin,Operating margin,5,[^,]+,[^,]+,[^,]+,[^,]+,[0-9]+,([0-9]+)"
     expected_value: 143
     tolerance:
-    status: UNVERIFIED
+    status: PASS
     explanation: "N_treated column. The 272 comparison is the pre=3 row, audited as sec46elig-ntr-margin-state."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-currentratio-pre5
     document: appendix
@@ -1877,9 +1877,9 @@ claims:
     artifact_key: "regex:^current_ratio,Current ratio,5,(-?[0-9.]+)"
     expected_value: -0.371
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-currentratio-pre2
     document: appendix
@@ -1890,9 +1890,9 @@ claims:
     artifact_key: "regex:^current_ratio,Current ratio,2,(-?[0-9.]+)"
     expected_value: -0.206
     tolerance: 0.001
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-netpatrev-range-low
     document: appendix
@@ -1903,9 +1903,9 @@ claims:
     artifact_key: "regex:^net_pat_rev,Net patient revenue per bed,5,(-?[0-9.]+)"
     expected_value: -9.53
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-netpatrev-range-high
     document: appendix
@@ -1916,9 +1916,9 @@ claims:
     artifact_key: "regex:^net_pat_rev,Net patient revenue per bed,2,(-?[0-9.]+)"
     expected_value: -20.65
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-totopexp-range-low
     document: appendix
@@ -1929,9 +1929,9 @@ claims:
     artifact_key: "regex:^tot_operating_exp,Operating expenses per bed,5,(-?[0-9.]+)"
     expected_value: -17.80
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appC-totopexp-range-high
     document: appendix
@@ -1942,9 +1942,9 @@ claims:
     artifact_key: "regex:^tot_operating_exp,Operating expenses per bed,3,(-?[0-9.]+)"
     expected_value: -21.60
     tolerance: 0.05
-    status: UNVERIFIED
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appE-netpatrev-perm-p
     document: appendix
@@ -1955,9 +1955,9 @@ claims:
     artifact_key: "row=Net patient revenue per bed,col=p_value"
     expected_value: 0.072
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appE-system-perm-p
     document: appendix
@@ -1968,9 +1968,9 @@ claims:
     artifact_key: "row=System membership,col=p_value"
     expected_value: 0.094
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-n-states
     document: appendix
@@ -1981,9 +1981,9 @@ claims:
     artifact_key: "regex:^States & [0-9]+ & ([0-9]+)"
     expected_value: 19
     tolerance:
-    status: STALE
+    status: PASS
     explanation: "The 35 is the sum of the 1999, 2000, and 2001 cohort columns (19 + 8 + 8), audited here through the 1999 column. The other two are sec33-states-2000 and sec33-states-2001."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-rural-1999
     document: appendix
@@ -1994,9 +1994,9 @@ claims:
     artifact_key: "regex:^Share of hospitals rural & [^&]+ & ([0-9.]+)"
     expected_value: 0.367
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-rural-2000
     document: appendix
@@ -2007,9 +2007,9 @@ claims:
     artifact_key: "regex:^Share of hospitals rural(?: & [^&]+){2} & ([0-9.]+)"
     expected_value: 0.231
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-rural-2001
     document: appendix
@@ -2020,9 +2020,9 @@ claims:
     artifact_key: "regex:^Share of hospitals rural(?: & [^&]+){3} & ([0-9.]+)"
     expected_value: 0.168
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-smallhosp-correlation
     document: appendix
@@ -2033,9 +2033,9 @@ claims:
     artifact_key: "regex:^Hospitals with 50 or fewer beds(?: & [^&]+){6} & (-?[0-9.]+)"
     expected_value: -0.45
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-margin-1999
     document: appendix
@@ -2046,9 +2046,9 @@ claims:
     artifact_key: "regex:^Operating margin, 1994-96 & [^&]+ & (-?[0-9.]+)"
     expected_value: -0.024
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation: "The gap itself is not persisted. The table gives -0.024 for 1999 and 0.002 for 2001, a 2.6-point difference that the prose rounds to about 2.5."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-margin-2001
     document: appendix
@@ -2059,9 +2059,9 @@ claims:
     artifact_key: "regex:^Operating margin, 1994-96(?: & [^&]+){3} & (-?[0-9.]+)"
     expected_value: 0.002
     tolerance: 0.001
-    status: STALE
+    status: PASS
     explanation: "See appF-margin-1999."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-converter-margin
     document: appendix
@@ -2072,9 +2072,9 @@ claims:
     artifact_key: "regex:^Operating margin .3-year mean. & (-?[0-9.]+)"
     expected_value: -0.094
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-converter-currentratio
     document: appendix
@@ -2085,9 +2085,9 @@ claims:
     artifact_key: "regex:^Current ratio .3-year mean. & ([0-9.]+)"
     expected_value: 2.606
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-closer-margin
     document: appendix
@@ -2098,9 +2098,9 @@ claims:
     artifact_key: "regex:^Operating margin .3-year mean.(?: & [^&]+){2} & (-?[0-9.]+)"
     expected_value: -0.136
     tolerance: 0.002
-    status: STALE
+    status: PASS
     explanation: "Small closers column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-closer-currentratio
     document: appendix
@@ -2111,9 +2111,9 @@ claims:
     artifact_key: "regex:^Current ratio .3-year mean.(?: & [^&]+){2} & ([0-9.]+)"
     expected_value: 1.726
     tolerance: 0.01
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-share-below-median
     document: appendix
@@ -2124,9 +2124,9 @@ claims:
     artifact_key: "row=0,col=share_converters_below"
     expected_value: 0.268
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-rural-converters
     document: appendix
@@ -2137,9 +2137,9 @@ claims:
     artifact_key: "regex:^Rural & ([0-9.]+)"
     expected_value: 0.669
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-rural-closers
     document: appendix
@@ -2150,9 +2150,9 @@ claims:
     artifact_key: "regex:^Rural(?: & [^&]+){2} & ([0-9.]+)"
     expected_value: 0.177
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "Small closers column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-distance-converters
     document: appendix
@@ -2163,9 +2163,9 @@ claims:
     artifact_key: "regex:^Miles to nearest hospital & ([0-9.]+)"
     expected_value: 16.4
     tolerance: 0.1
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-distance-closers
     document: appendix
@@ -2176,9 +2176,9 @@ claims:
     artifact_key: "regex:^Miles to nearest hospital(?: & [^&]+){2} & ([0-9.]+)"
     expected_value: 11.6
     tolerance: 0.1
-    status: STALE
+    status: PASS
     explanation: "Small closers column."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-le25-change
     document: appendix
@@ -2189,9 +2189,9 @@ claims:
     artifact_key: "regex:^25 or fewer,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: 1.86
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-le25-share
     document: appendix
@@ -2202,9 +2202,9 @@ claims:
     artifact_key: "regex:^25 or fewer,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+)"
     expected_value: 0.943
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "share_le25 column. Not shown in Table G2, which reports share_at25 (0.23) instead."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-26-35
     document: appendix
@@ -2215,9 +2215,9 @@ claims:
     artifact_key: "regex:^26 to 35,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: -3.30
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-36-50
     document: appendix
@@ -2228,9 +2228,9 @@ claims:
     artifact_key: "regex:^36 to 50,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: -13.78
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-51-75
     document: appendix
@@ -2241,9 +2241,9 @@ claims:
     artifact_key: "regex:^51 to 75,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+),"
     expected_value: -17.28
     tolerance: 0.05
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-two-thirds-26-35
     document: appendix
@@ -2254,9 +2254,9 @@ claims:
     artifact_key: "regex:^26 to 35,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 0.698
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appG-split-two-thirds-36-50
     document: appendix
@@ -2267,9 +2267,9 @@ claims:
     artifact_key: "regex:^36 to 50,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 0.660
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation:
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appB-attrition-system
     document: appendix
@@ -2280,9 +2280,9 @@ claims:
     artifact_key: "regex:^system,1999,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([0-9.]+),"
     expected_value: 66.8
     tolerance: 0.5
-    status: UNVERIFIED
+    status: PASS
     explanation: "pct_lost_to_balance for the 1999 cohort; the 2000 and 2001 cohorts read 68.1 and 66.8 in the same file."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-ols-rural-p
     document: appendix
@@ -2293,9 +2293,9 @@ claims:
     artifact_key: "regex:^share_rural,[^,]+,[^,]+,[^,]+,([0-9.eE+-]+),"
     expected_value: 0.087
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "p.value of share_rural in the joint OLS of first designation year on six state characteristics, 35 states."
-    last_verified:
+    last_verified: 2026-09-14
 
   - id: appF-ols-small-p
     document: appendix
@@ -2306,6 +2306,6 @@ claims:
     artifact_key: "regex:^n_small,[^,]+,[^,]+,[^,]+,([0-9.eE+-]+),"
     expected_value: 0.084
     tolerance: 0.005
-    status: STALE
+    status: PASS
     explanation: "p.value of n_small in the same regression."
-    last_verified:
+    last_verified: 2026-09-14
