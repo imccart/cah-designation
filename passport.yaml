@@ -73,7 +73,7 @@ claims:
   - id: abstract-ed-percent
     document: paper
     claim: "Emergency department visits fall by roughly 17 percent"
-    location: "Abstract; Introduction ¶6; Section 4.3 ¶4; Section 5.2 ¶4"
+    location: "Introduction ¶6; Section 4.3 ¶4; Section 5.2 ¶4"
     script: analysis/R1_revision.R
     artifact: results/diagnostics/visits-att.csv
     artifact_key: "regex:^ED visits per bed,state,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,[^,]+,(-?[0-9.]+)"
