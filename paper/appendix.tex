@@ -55,11 +55,13 @@ This appendix provides supplementary material for the main text. Section~\ref{se
 
 We construct six financial measures (operating margin, current ratio, net patient revenue per bed, total operating expenses per bed, net fixed assets per bed, and capital expenditures per bed) from the Healthcare Cost Report Information System (HCRIS). This section describes the crosswalk that links converting hospitals to their pre-designation cost reports, the measure definitions, and the post-processing steps.
 
-\subsection{Data Sources}
+\subsection{Cost Report Data}
 
-\paragraph{\textit{HCRIS.}} Medicare-certified hospitals file annual cost reports, from which we extract net patient revenue, total operating expenses, current assets, current liabilities, net fixed assets (land, buildings, and equipment net of accumulated depreciation), and the components of accumulated depreciation. These fields are drawn from Worksheet G (balance sheet) and Worksheet G-3 (income statement) of the cost report. When a hospital files multiple non-overlapping reports in a single fiscal year, we sum the relevant fields across reports. CMS publishes cost report data beginning with fiscal year 1996, so our financial series begins in 1996.
+Medicare-certified hospitals file annual cost reports, from which we extract net patient revenue, total operating expenses, current assets, current liabilities, net fixed assets (land, buildings, and equipment net of accumulated depreciation), and the components of accumulated depreciation. These fields are drawn from Worksheet G (balance sheet) and Worksheet G-3 (income statement) of the cost report. When a hospital files multiple non-overlapping reports in a single fiscal year, we sum the relevant fields across reports. CMS publishes cost report data beginning with fiscal year 1996, so our financial series begins in 1996.
 
-\paragraph{\textit{Linking converters to their pre-designation cost reports.}} Cost reports are identified by Medicare provider number, and a hospital receives a new number when it is designated as a CAH. We therefore match each converter's pre-designation years to cost reports filed under non-CAH provider numbers in the same state, using name similarity within zip code or city. We drop earlier numbers claimed by two converters, numbers that belong to another hospital, and numbers whose reports continue for more than two years after designation. Of converters' pre-designation hospital-years from 1996 onward, 86 percent have a cost report, compared with 15 percent under a time-invariant crosswalk that assigns each hospital one provider number for all years.
+\subsection{Crosswalk}
+
+Cost reports are identified by Medicare provider number, and a hospital receives a new number when it is designated as a CAH. We therefore match each converter's pre-designation years to cost reports filed under non-CAH provider numbers in the same state, using name similarity within zip code or city. We drop earlier numbers claimed by two converters, numbers that belong to another hospital, and numbers whose reports continue for more than two years after designation. Of converters' pre-designation hospital-years from 1996 onward, 86 percent have a cost report, compared with 15 percent under a time-invariant crosswalk that assigns each hospital one provider number for all years.
 
 \subsection{Measure Definitions}
 
