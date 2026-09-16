@@ -19,8 +19,9 @@ scratch/*
 # Sensitive files
 data-code/api-keys.R
 
-# Results diagnostics (not for GitHub)
+# Results diagnostics (not for GitHub), except the pre-trend figures the paper includes
 results/diagnostics/*
+!results/diagnostics/diag-pretrend-*.png
 
 # Submission folders
 paper/submissions/

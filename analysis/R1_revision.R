@@ -138,12 +138,22 @@ for (oname in names(visit_map)) {
       visit_rows[[length(visit_rows) + 1]] <- tibble(outcome = o$label, design = dsg, sdid_att = s$att, sdid_lo = s$lo, sdid_hi = s$hi, sdid_ntr = s$ntr,
                                                      cs_att = if (is.null(cs)) NA_real_ else cs$att, cs_lo = if (is.null(cs)) NA_real_ else cs$lo, cs_hi = if (is.null(cs)) NA_real_ else cs$hi,
                                                      pre_mean = s$pre_mean, pct_of_pre_mean = s$att / s$pre_mean)
+      ## Pooled and cohort ATTs in the corner, as in the main SDID figures.
+      att_lab <- paste(
+        "ATT and 95%CI",
+        sprintf("Overall: %.2f [%.2f, %.2f]", s$att, s$lo, s$hi),
+        paste(sprintf("%d: %.2f [%.2f, %.2f]", s$cohorts$cohort, s$cohorts$att,
+                      s$cohorts$att - 1.96 * s$cohorts$se, s$cohorts$att + 1.96 * s$cohorts$se),
+              collapse = "\n"),
+        sep = "\n"
+      )
       p <- ggplot(s$agg, aes(tau)) +
         geom_line(aes(y = treated, linetype = "Treated"), linewidth = 0.9) +
         geom_line(aes(y = synthetic, linetype = "Synthetic control"), linewidth = 0.9) +
         geom_vline(xintercept = -0.5, linewidth = 1) +
         scale_linetype_manual(values = c("Treated" = "solid", "Synthetic control" = "dashed")) +
-        labs(x = "Event time", y = o$label, linetype = NULL) + theme_bw(base_size = 13) + theme(legend.position = "bottom")
+        labs(x = "Event time", y = o$label, linetype = NULL) + theme_bw(base_size = 13) + theme(legend.position = "bottom") +
+        annotate("text", x = max(s$agg$tau), y = Inf, label = att_lab, hjust = 1, vjust = 1.5, size = 3.5)
       ggsave(sprintf("results/%s-%s-sdid.png", o$stub, dsg), p, width = 6.5, height = 4.25, dpi = 300)
     }
     ## CS event study for the appendix, drawn the same way as in 2-hospital-dd.R.
