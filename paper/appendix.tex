@@ -63,14 +63,14 @@ We construct six financial measures (operating margin, current ratio, net patien
 
 \subsection{Measure Definitions}
 
-\paragraph{\textit{Operating margin.}} From HCRIS, operating margin is defined as
+\paragraph{\textit{Operating margin.}} Operating margin is defined as
 $$
-\text{margin}_{\text{HCRIS}} = \frac{\text{net patient revenue} - \text{total operating expenses}}{\text{net patient revenue}}.
+\text{margin} = \frac{\text{net patient revenue} - \text{total operating expenses}}{\text{net patient revenue}}.
 $$
 
-\paragraph{\textit{Current ratio.}} From HCRIS, the current ratio is defined as
+\paragraph{\textit{Current ratio.}} The current ratio is defined as
 $$
-\text{current ratio}_{\text{HCRIS}} = \frac{\text{current assets}}{\text{current liabilities}},
+\text{current ratio} = \frac{\text{current assets}}{\text{current liabilities}},
 $$
 where both fields are drawn from the balance sheet (Worksheet G).
 
@@ -80,7 +80,7 @@ $$
 $$
 where $\bar{B}_{\text{pre}}$ is the pre-period mean bed count and the CPI deflator is the ratio of the current-year CPI-U index to the 2010 index.
 
-\paragraph{\textit{Capital expenditures per bed.}} We approximate capital expenditures as the year-to-year change in gross fixed assets. From HCRIS, gross fixed assets are computed as net fixed assets plus accumulated depreciation; capital expenditure is then the first difference of this series within each hospital. As with net fixed assets, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in units of \$10,000 per bed:
+\paragraph{\textit{Capital expenditures per bed.}} We approximate capital expenditures as the year-to-year change in gross fixed assets. Gross fixed assets are computed as net fixed assets plus accumulated depreciation; capital expenditure is then the first difference of this series within each hospital. As with net fixed assets, we normalize by the pre-period mean bed count and deflate to constant 2010 dollars, expressed in units of \$10,000 per bed:
 $$
 \text{capex per bed} = \frac{\Delta\text{gross fixed assets}}{10^4 \times \bar{B}_{\text{pre}} \times \text{CPI deflator}}.
 $$
@@ -218,7 +218,7 @@ Table~\ref{tab:bedsize-split} compares converters by their bed size three years 
 %%% SECTION 6: Anticipatory Downsizing
 %%% ===================================================================
 
-\section[Pre-Designation Restructuring in the Eligibility-Restricted Design]{Pre-Designation Restructuring in the Eligibility-Restricted Design}
+\section[Pre-Designation Restructuring in the Eligibility-Restricted Design]{Pre-Designation Restructuring \\ in the Eligibility-Restricted Design}
 \label{sec:app-anticipation}
 
 The main text reports estimates with treatment dated one year before designation for the state-timing design. Table~\ref{tab:anticipation} reports the same exercise for the eligibility-restricted design. The capacity effects are similar under either dating, with FTE RNs and inpatient days per bed declining somewhat more and total beds and OB beds slightly less. The margin effect falls by half, from 0.037 to 0.018, and the declines in net patient revenue and operating expenses per bed become larger. This is because the year before designation is counted as treated, and in that year hospitals are shedding scale before cost-based reimbursement begins. These results for the eligibility-restricted design therefore mirror the state-timing results in the main text.
