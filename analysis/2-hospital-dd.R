@@ -36,6 +36,12 @@ hosp.event.paths <- tibble(
   synthetic = numeric(), cohorts_n = numeric()
 )
 
+## Event-time effects behind the SDID/CS overlay figures, pooled across cohorts,
+## and the cohort covariances the pre-trend sensitivity analysis needs.
+hosp.event.series <- tibble()
+hosp.event.cohort <- tibble()
+hosp.event.vcov   <- tibble()
+
 # Main loop -------------------------------------------------------------------
 for (oname in names(hosp_outcome_map)) {
   o <- hosp_outcome_map[[oname]]
@@ -118,6 +124,8 @@ for (oname in names(hosp_outcome_map)) {
     setup   <- panel.matrices(as.data.frame(bal.c))
     est     <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
     se_c    <- synthdid_se(est, method = "jackknife")
+    ev      <- sdid_event(est, setup, c)
+    cs      <- cs_cohort(bal.c, c, min.es = -pre_period, max.es = 5)
 
     w       <- attr(est, "weights")$omega
     Y       <- setup$Y
@@ -138,7 +146,10 @@ for (oname in names(hosp_outcome_map)) {
       att_se = tibble(cohort = c,
                       att = as.numeric(est),
                       se  = as.numeric(se_c),
-                      Ntr = Ntr)
+                      Ntr = Ntr),
+      sdid_es   = ev$es,
+      sdid_vcov = vcov_long(ev$vcov, c, ev$es$e),
+      cs        = cs
     )
   }
 
@@ -209,35 +220,29 @@ for (oname in names(hosp_outcome_map)) {
   )
 
 
-  # Callaway and Sant'Anna -----------------------------------------------------
-  min.es <- -pre_period
-  max.es <- 5
+  # Event-time effects: SDID per period and CS, cohort by cohort on the same
+  # balanced panels, pooled with treated-unit-count weights --------------------
+  sdid_es <- pool_event(bind_rows(map(out, "sdid_es"))) %>% mutate(estimator = "SDID")
+  cs_list <- compact(map(out, "cs"))
+  if (length(cs_list) == 0) stop(sprintf("CS failed for every cohort on %s", oname))
+  cs_atts <- bind_rows(map(cs_list, function(x) tibble(att = x$att, se = x$se, Ntr = x$Ntr)))
+  cs_es   <- pool_event(bind_rows(map(cs_list, "es"))) %>% mutate(estimator = "CS")
+  cs_att_val <- with(cs_atts, sum(Ntr * att) / sum(Ntr))
+  cs_se_val  <- with(cs_atts, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
 
-  cs.out <- cs_att(est.dat, oname, cohorts, bed.cut,
-                   min.es = min.es, max.es = max.es)
-  if (is.null(cs.out)) stop(sprintf("CS failed for every cohort on %s", oname))
+  series <- bind_rows(sdid_es, cs_es)
+  ggsave(sprintf("results/%s-overlay.png", file_stub), overlay_plot(series, outcome_label),
+         width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
 
-  est.cs <- cs.out$es %>%
-    mutate(
-      conf.low  = if_else(event_time!= -1, estimate - 1.96 * se, 0),
-      conf.high = if_else(event_time!= -1, estimate + 1.96 * se, 0),
-      estimator = "CS"
-    ) %>%
-    select(-se)
-
-  plot.cs <- ggplot(est.cs, aes(x = event_time, y = estimate)) +
-    geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
-                  position = position_dodge(width = 0.5),
+  plot.cs <- ggplot(cs_es %>% mutate(se = replace_na(se, 0)), aes(x = e, y = estimate)) +
+    geom_errorbar(aes(ymin = estimate - 1.96 * se, ymax = estimate + 1.96 * se),
                   width = 0, linewidth = 0.5, alpha = 0.3, color = "black") +
-    geom_point(position = position_dodge(width = 0.5),
-               size = 2.5, color = "black", stroke = 0.1, fill="white") +
+    geom_point(size = 2.5, color = "black", stroke = 0.1, fill = "white") +
     geom_hline(yintercept = 0, color = "black", linewidth = 1) +
     scale_x_continuous(breaks = seq(-10, 10, by = 1)) +
     labs(x = "Event time", y = "Estimated Effects") +
     theme_bw() +
-    theme(
-      legend.position = "none"
-    )
+    theme(legend.position = "none")
 
   ggsave(
     sprintf("results/%s-cs.png", file_stub),
@@ -245,8 +250,6 @@ for (oname in names(hosp_outcome_map)) {
   )
 
   # Collect results ------------------------------------------------------------
-  cs_att_val <- cs.out$att
-  cs_se_val  <- cs.out$se
 
   hosp.results.table <- bind_rows(hosp.results.table, tibble(
     outcome      = outcome_label,
@@ -265,9 +268,23 @@ for (oname in names(hosp_outcome_map)) {
   hosp.event.paths <- bind_rows(hosp.event.paths,
     agg_paths %>% mutate(outcome = outcome_label) %>%
       select(outcome, tau, treated, synthetic, cohorts_n))
+
+  hosp.event.series <- bind_rows(hosp.event.series,
+    series %>% mutate(outcome = outcome_label))
+  hosp.event.cohort <- bind_rows(hosp.event.cohort,
+    bind_rows(map(out, "sdid_es")) %>% mutate(outcome = outcome_label, estimator = "SDID"),
+    bind_rows(map(cs_list, "es")) %>% mutate(outcome = outcome_label, estimator = "CS"))
+  hosp.event.vcov <- bind_rows(hosp.event.vcov,
+    bind_rows(map(out, "sdid_vcov")) %>%
+      mutate(outcome = outcome_label, estimator = "SDID"),
+    bind_rows(map(cs_list, function(x) vcov_long(x$vcov, x$es$cohort[1], x$es$e))) %>%
+      mutate(outcome = outcome_label, estimator = "CS"))
 }
 
 write_csv(hosp.event.paths, "results/diagnostics/sdid-event-paths.csv")
+write_csv(hosp.event.series, "results/diagnostics/event-series-state.csv")
+write_csv(hosp.event.cohort, "results/diagnostics/event-cohort-state.csv")
+write_csv(hosp.event.vcov, "results/diagnostics/event-vcov-state.csv")
 
 # Cohort-specific SDID LaTeX output -------------------------------------------
 fmt <- function(x) {

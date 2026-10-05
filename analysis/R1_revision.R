@@ -14,7 +14,8 @@
 ##
 ## Comments handled without a chunk here (writing-only or promotion of
 ## existing results): E1/R3.1, E5, R2.2 (text), R2.3 (text; numbers come
-## from the R2.5 chunk), R3.2, R2-minor(a,b,c,d). See response-plan.md.
+## from the financial-series chunk), R2.5 (answered in the first round; the
+## Form 990 series are no longer built), R3.2, R2-minor(a,b,c,d).
 ## =====================================================================
 
 
@@ -30,7 +31,7 @@ ci3  <- function(lo, hi) sprintf("[%s, %s]", fmt3(lo), fmt3(hi))
 ## estimation in 2-hospital-dd.R / 3-hospital-dd-alt.R; `shift` counts the
 ## year before designation as treated (app-anticipation.R); `keep_ids`
 ## restricts the panel to a hospital list.
-rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL) {
+rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL, with_cs = FALSE) {
   osym <- sym(oname)
   run_c <- function(c) {
     d <- stack %>% filter(stack_group == c) %>%
@@ -46,6 +47,8 @@ rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL) 
     if (s$T0 < 2) return(NULL)
     e <- synthdid_estimate(s$Y, s$N0, s$T0)
     se <- synthdid_se(e, method = "jackknife")
+    ev <- sdid_event(e, s, c)
+    cs <- if (with_cs) cs_cohort(bal, c, min.es = -pre, max.es = post) else NULL
     N   <- nrow(s$Y)
     N0  <- s$N0
     w   <- attr(e, "weights")$omega
@@ -53,7 +56,10 @@ rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL) 
     list(att = tibble(cohort = c, att = as.numeric(e), se = as.numeric(se), Ntr = N - N0, Nco = N0,
                       pre_mean = mean(s$Y[(N0 + 1):N, 1:s$T0])),
          path = tibble(cohort = c, tau = yrs - c, treated = colMeans(s$Y[(N0 + 1):N, , drop = FALSE]),
-                       synthetic = as.numeric(drop(t(w) %*% s$Y[1:N0, , drop = FALSE])), Ntr = N - N0))
+                       synthetic = as.numeric(drop(t(w) %*% s$Y[1:N0, , drop = FALSE])), Ntr = N - N0),
+         sdid_es = ev$es,
+         sdid_vcov = vcov_long(ev$vcov, c, ev$es$e),
+         cs = cs)
   }
   out <- compact(map(cohorts, function(c) tryCatch(run_c(c), error = function(e) NULL)))
   if (length(out) == 0) return(NULL)
@@ -76,6 +82,28 @@ rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL) 
               synthetic = weighted.mean(synthetic, Ntr),
               .groups = "drop")
 
+  ## Event-time effects, SDID per period and (with_cs) CS on the same balanced
+  ## panels, pooled with the same treated-unit-count weights.
+  sdid_es <- pool_event(bind_rows(map(out, "sdid_es"))) %>% mutate(estimator = "SDID")
+  cs_list <- compact(map(out, "cs"))
+  cs <- NULL
+  if (length(cs_list) > 0) {
+    cs_atts <- bind_rows(map(cs_list, function(x) tibble(att = x$att, se = x$se, Ntr = x$Ntr)))
+    cs_att  <- with(cs_atts, sum(Ntr * att) / sum(Ntr))
+    cs_se   <- with(cs_atts, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
+    cs_es   <- pool_event(bind_rows(map(cs_list, "es")))
+    cs <- list(att = cs_att, lo = cs_att - 1.96 * cs_se, hi = cs_att + 1.96 * cs_se,
+               es = cs_es %>% transmute(event_time = e, estimate, se))
+  }
+  series <- bind_rows(sdid_es,
+                      if (is.null(cs)) NULL else
+                        cs$es %>% transmute(e = event_time, estimate, se, estimator = "CS"))
+  cohort_series <- bind_rows(bind_rows(map(out, "sdid_es")) %>% mutate(estimator = "SDID"),
+                             bind_rows(map(cs_list, "es")) %>% mutate(estimator = "CS"))
+  cohort_vcov <- bind_rows(bind_rows(map(out, "sdid_vcov")) %>% mutate(estimator = "SDID"),
+                           bind_rows(map(cs_list, function(x) vcov_long(x$vcov, x$es$cohort[1], x$es$e))) %>%
+                             mutate(estimator = "CS"))
+
   list(att = pooled$att,
        lo  = pooled$att - 1.96 * pooled$se,
        hi  = pooled$att + 1.96 * pooled$se,
@@ -83,15 +111,11 @@ rr_sdid <- function(oname, stack, cohorts, pre, shift = FALSE, keep_ids = NULL) 
        nco = pooled$nco,
        cohorts = atts,
        pre_mean = pooled$pre_mean,
-       agg = agg)
-}
-
-rr_cs <- function(oname, design) {
-  out <- cs_att(est.dat, oname,
-                if (design == "state") 1999:2001 else 1999:2005,
-                bed.cut = bed.cut)
-  if (is.null(out)) return(NULL)
-  list(att = out$att, lo = out$ci_low, hi = out$ci_high, es = out$es)
+       agg = agg,
+       series = series,
+       cohort_series = cohort_series,
+       cohort_vcov = cohort_vcov,
+       cs = cs)
 }
 
 write_tabular <- function(lines, header, path, align) {
@@ -127,12 +151,18 @@ visit_map <- list(ed_per_bed = list(label = "ED visits per bed", stub = "edvisit
                   opnon_per_bed = list(label = "Non-ED outpatient visits per bed", stub = "opvisits-noned"),
                   BIRTHS = list(label = "Births", stub = "births"))
 visit_rows <- list()
+visit_series <- tibble()
+visit.event.cohort <- tibble()
+visit.event.vcov   <- tibble()
 for (oname in names(visit_map)) {
   o <- visit_map[[oname]]
   for (dsg in c("state", "elig")) {
-    s <- rr_sdid(oname, if (dsg == "state") stack.hosp else stack.elig, if (dsg == "state") 1999:2001 else 1999:2005, pre = 5)
-    cs <- rr_cs(oname, dsg)
+    s <- rr_sdid(oname, if (dsg == "state") stack.hosp else stack.elig, if (dsg == "state") 1999:2001 else 1999:2005, pre = 5, with_cs = TRUE)
+    cs <- if (is.null(s)) NULL else s$cs
     if (!is.null(s)) {
+      visit_series <- bind_rows(visit_series, s$series %>% mutate(outcome = o$label, design = dsg))
+      visit.event.cohort <- bind_rows(visit.event.cohort, s$cohort_series %>% mutate(outcome = o$label, design = dsg))
+      visit.event.vcov   <- bind_rows(visit.event.vcov, s$cohort_vcov %>% mutate(outcome = o$label, design = dsg))
       ## pre_mean is the treated pre-period mean, the base for the percent
       ## effects quoted in the abstract and Section 4.3.
       visit_rows[[length(visit_rows) + 1]] <- tibble(outcome = o$label, design = dsg, sdid_att = s$att, sdid_lo = s$lo, sdid_hi = s$hi, sdid_ntr = s$ntr,
@@ -155,6 +185,8 @@ for (oname in names(visit_map)) {
         labs(x = "Event time", y = o$label, linetype = NULL) + theme_bw(base_size = 13) + theme(legend.position = "bottom") +
         annotate("text", x = max(s$agg$tau), y = Inf, label = att_lab, hjust = 1, vjust = 1.5, size = 3.5)
       ggsave(sprintf("results/%s-%s-sdid.png", o$stub, dsg), p, width = 6.5, height = 4.25, dpi = 300)
+      ggsave(sprintf("results/%s-%s-overlay.png", o$stub, dsg), overlay_plot(s$series, o$label),
+             width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
     }
     ## CS event study for the appendix, drawn the same way as in 2-hospital-dd.R.
     if (!is.null(cs)) {
@@ -176,6 +208,9 @@ for (oname in names(visit_map)) {
 }
 visit_res <- bind_rows(visit_rows)
 write_csv(visit_res, "results/diagnostics/visits-att.csv")
+write_csv(visit_series, "results/diagnostics/event-series-visits.csv")
+write_csv(visit.event.cohort, "results/diagnostics/event-cohort-visits.csv")
+write_csv(visit.event.vcov, "results/diagnostics/event-vcov-visits.csv")
 dsg_label <- c(state = "State-timing", elig = "Eligibility-restricted")
 ## Main text carries the state-timing design; the eligibility-restricted design
 ## goes to the appendix, matching how the other outcomes are presented.
@@ -496,73 +531,24 @@ for (oname in names(payer_labels)) {
 write_csv(bind_rows(payer_rows), "results/diagnostics/payer-mix.csv")
 
 
-## ===== R2.5 — Data source: shares, definitional gaps, and same-hospital comparison =====
-## Source of each financial observation in the original combined series by
-## converter status and period; the Form 990 vs HCRIS difference for the same
-## hospital-year; and SDID on the combined series, the HCRIS-only series, and
-## the Form-990-only series for the same hospitals. Writes
-## results/att_source_comparison.tex and diagnostics CSVs.
-
-## Whether a hospital-year has a cost report, taken from the linked HCRIS file
-## rather than from est.dat, whose financial columns are interpolated.
-hcris_present <- read_csv('data/output/hcris_financial.csv', show_col_types = FALSE,
-                          col_types = cols(ID = col_character())) %>%
-  transmute(ID, year,
-            has_hcris = !is.na(net_pat_rev) & !is.na(tot_operating_exp),
-            margin_hcris = ifelse(net_pat_rev > 0, (net_pat_rev - tot_operating_exp) / net_pat_rev, NA_real_))
-
-src <- est.dat %>%
-  filter(year >= 1995, year <= 2010) %>%
-  group_by(ID) %>%
-  mutate(mb = min(BDTOT, na.rm = TRUE)) %>%
-  ungroup() %>%
-  filter(mb <= bed.cut) %>%
-  left_join(hcris_present, by = c("ID", "year")) %>%
-  mutate(grp = case_when(ever_cah == 1 & year >= eff_year ~ "Converters, after designation",
-                         ever_cah == 1 ~ "Converters, before designation",
-                         TRUE ~ "Never-converters"),
-         source = case_when(has_hcris ~ "HCRIS",
-                            !is.na(margin_990) ~ "Form 990",
-                            TRUE ~ "None"))
-shares <- src %>% count(grp, source) %>% group_by(grp) %>% mutate(share = n / sum(n)) %>% ungroup()
-write_csv(shares, "results/diagnostics/source-shares.csv")
-## Same hospital-year observed in both sources: margin gap, and the within
-## hospital-year ratio of the Form 990 to the HCRIS measure for revenue,
-## expenses, and net fixed assets on the identically winsorized and normalized
-## per-bed series (*_9 vs HCRIS-only). The median ratio is reported because the
-## ratio has a heavy right tail (Form 990 filings that cover more than one
-## facility), summarized by the share of hospital-years with a ratio above 2.
-overlap <- src %>% filter(!is.na(margin_hcris), !is.na(margin_990)) %>%
-  group_by(year, ever_cah) %>%
-  mutate(mh = winsor_by_year(margin_hcris), m9 = winsor_by_year(margin_990)) %>%
-  ungroup()
-src_ratio <- function(h, n) { ok <- !is.na(h) & !is.na(n) & h > 0; r <- n[ok] / h[ok]; c(median = median(r), share_above_2 = mean(r > 2), n = sum(ok)) }
-gap <- tibble(hospital_years = nrow(overlap), hcris_margin = mean(overlap$mh), form990_margin = mean(overlap$m9), gap_mean = mean(overlap$m9 - overlap$mh), gap_median = median(overlap$m9 - overlap$mh)) %>%
-  bind_cols(as_tibble_row(setNames(src_ratio(overlap$net_pat_rev, overlap$net_pat_rev_9), paste0("rev_ratio_", c("median", "share_above_2", "n")))),
-            as_tibble_row(setNames(src_ratio(overlap$tot_operating_exp, overlap$tot_operating_exp_9), paste0("exp_ratio_", c("median", "share_above_2", "n")))),
-            as_tibble_row(setNames(src_ratio(overlap$net_fixed, overlap$net_fixed_9), paste0("net_fixed_ratio_", c("median", "share_above_2", "n")))))
-write_csv(gap, "results/diagnostics/source-gap.csv")
-
-## Three series: the HCRIS series used throughout the paper, a Form-990-only
-## version, and the HCRIS series restricted to converters with a strict
-## crosswalk match (score >= 0.90, or zip-exact with score >= 0.75).
-## Never-converters are kept in every series. pre_mean is the treated pre-period
-## mean, the base for percent effects.
+## ===== Financial series: pre-designation means and percent effects =========
+## SDID on the HCRIS series for each financial outcome, with the treated
+## pre-period mean as the base for the percent effects quoted in Section 4.2,
+## plus the same series restricted to converters with a strict crosswalk match
+## (score >= 0.90, or zip-exact with score >= 0.75). Never-converters are kept
+## in both. Writes results/diagnostics/source-comparison.csv.
 strict_ids <- est.dat %>% filter(is.na(eff_year) | (!is.na(match_strict) & match_strict)) %>% distinct(ID) %>% pull(ID)
 src_rows <- list()
 for (dsg in c("state", "elig")) {
   stack <- if (dsg == "state") stack.hosp else stack.elig; cohorts <- if (dsg == "state") 1999:2001 else 1999:2005
   for (o in fin.vars) {
-    for (variant in c("h", "9", "hs")) {
-      oname <- if (variant == "9") paste0(o, "_9") else o
-      s <- rr_sdid(oname, stack, cohorts, pre = financial.pre, keep_ids = if (variant == "hs") strict_ids else NULL)
-      if (!is.null(s)) src_rows[[length(src_rows) + 1]] <- tibble(outcome = o, design = dsg, series = c(h = "HCRIS", `9` = "Form 990 only", hs = "HCRIS, strict matches")[[variant]],
+    for (variant in c("h", "hs")) {
+      s <- rr_sdid(o, stack, cohorts, pre = financial.pre, keep_ids = if (variant == "hs") strict_ids else NULL)
+      if (!is.null(s)) src_rows[[length(src_rows) + 1]] <- tibble(outcome = o, design = dsg, series = c(h = "HCRIS", hs = "HCRIS, strict matches")[[variant]],
                                                                   att = s$att, lo = s$lo, hi = s$hi, ntr = s$ntr, pre_mean = s$pre_mean, pct_of_pre_mean = s$att / s$pre_mean)
     }
   }
 }
-## The per-source estimates support the R2.5 response only. The paper uses the
-## HCRIS series throughout, so no table is written; the CSV carries every series.
 src_res <- bind_rows(src_rows)
 write_csv(src_res, "results/diagnostics/source-comparison.csv")
 
@@ -602,9 +588,10 @@ if (exists("het.results")) {
 ## ===== E5 — Closure ATT by cohort, SDID against Callaway--Sant'Anna ==========
 ## The pooled CS closure estimate is smaller in magnitude than SDID. This shows
 ## where that comes from: the 2000 and 2001 cohorts, where the not-yet-treated
-## control pool is smallest. CS is estimated once over all three cohorts, as in
-## cs_att(), and the group-time estimates are then averaged over each cohort's
-## own five post-treatment years so the horizon matches SDID. No CS standard
+## control pool is smallest. CS is estimated once over all three cohorts with
+## states as units, as in 4-changes-state-dd.R, and the group-time estimates
+## are then averaged over each cohort's own five post-treatment years so the
+## horizon matches SDID. No CS standard
 ## error is reported, since averaging ATT(g,t) by hand does not carry one.
 
 cs.closure <- state.dat %>%

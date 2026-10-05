@@ -43,7 +43,7 @@
 
 \vspace{1cm}
 
-This appendix provides supplementary material for the main text. Section~\ref{sec:app-financial} details the construction of our hospital-level financial measures. Section~\ref{sec:app-diagnostics} reports diagnostics for the synthetic difference-in-differences (SDID) estimator, including sample attrition from balanced-panel requirements, pre-trend tests, and synthetic control weight concentration. Section~\ref{sec:app-sample} examines sensitivity to the estimation sample, including the control group construction, pre-period length, bed size cutoff, and the eligibility-restricted design. Section~\ref{sec:app-alt} presents results from alternative estimators (Callaway--Sant'Anna and interactive fixed effects). Section~\ref{sec:app-perm} reports permutation inference results. Section~\ref{sec:app-adoption} examines what predicts a state's adoption year, Section~\ref{sec:app-populations} compares converting hospitals with hospitals that closed and reports bed reductions by initial size, and Section~\ref{sec:app-anticipation} reports the eligibility-restricted version of the pre-designation restructuring analysis in the main text.
+This appendix provides supplementary material for the main text. Section~\ref{sec:app-financial} details the construction of our hospital-level financial measures. Section~\ref{sec:app-diagnostics} reports diagnostics for the synthetic difference-in-differences (SDID) estimator, including sample attrition from balanced-panel requirements, pre-trend tests, and synthetic control weight concentration. Section~\ref{sec:app-sample} examines sensitivity to the estimation sample, including the control group construction, pre-period length, bed size cutoff, and the eligibility-restricted design. Section~\ref{sec:app-alt} presents the treated and synthetic control paths underlying the SDID estimates, the event-time estimates for the eligibility-restricted design, and results from the interactive fixed effects estimator. Section~\ref{sec:app-pretrend} examines the sensitivity of the main estimates to pre-existing trends. Section~\ref{sec:app-perm} reports permutation inference results. Section~\ref{sec:app-adoption} examines what predicts a state's adoption year, Section~\ref{sec:app-populations} compares converting hospitals with hospitals that closed and reports bed reductions by initial size, and Section~\ref{sec:app-anticipation} reports the eligibility-restricted version of the pre-designation restructuring analysis in the main text.
 
 
 %%% ===================================================================
@@ -113,13 +113,13 @@ $$
 \section{SDID Diagnostics}
 \label{sec:app-diagnostics}
 
-Our primary estimates use the synthetic difference-in-differences (SDID) estimator, which requires a balanced panel of units observed in every period of the event window \citep{arkhangelsky2021}. This requirement can reduce sample sizes relative to estimators that accommodate unbalanced panels, such as the Callaway and Sant'Anna (CS) estimator \citep{callaway2021}. Similarly, the SDID estimator assigns nonnegative weights to control units to match the treated group's pre-period trajectory. If these weights are highly concentrated on a small number of controls, the resulting estimates may be sensitive to idiosyncratic variation in those units. We present three diagnostics below to assess these concerns.
+Our primary estimates use the synthetic difference-in-differences (SDID) estimator, which requires a balanced panel of units observed in every period of the event window \citep{arkhangelsky2021}. The SDID estimator also assigns nonnegative weights to control units to match the treated group's pre-period trajectory. If these weights are highly concentrated on a small number of controls, the resulting estimates may be sensitive to idiosyncratic variation in those units. We present three diagnostics below to assess these concerns.
 
-Table~\ref{tab:diag-sample} reports, for each outcome and cohort, the number of treated and control units in the SDID balanced panel and in the full sample before balancing, together with the share of units lost to balancing. Attrition is largest for system membership, where roughly two-thirds of units in every cohort drop out of the balanced panel, and for the 1999 cohort of the financial outcomes, whose event window reaches back to the first years of the cost report data. Table~\ref{tab:diag-weights} reports the number of control units, the largest weight on any single control, the share of weight on the five largest controls, and the Herfindahl index of the weights. For the hospital-level outcomes, the largest weight on any control is at most 0.06 and the five largest controls never carry more than 27 percent of the weight, so no estimate depends on a handful of controls. The state-level outcomes have far fewer controls, 5 to 21 states depending on the cohort, so their weights are necessarily more concentrated.
+Table~\ref{tab:diag-sample} reports, for each outcome and cohort, the number of treated and control units in the SDID balanced panel and in the full sample before balancing, together with the share of units lost to balancing. Attrition is largest for the 1999 cohort of the financial outcomes, where roughly three in five units drop out of the balanced panel because the event window reaches back to the first years of the cost report data. Table~\ref{tab:diag-weights} reports the number of control units, the largest weight on any single control, the share of weight on the five largest controls, and the Herfindahl index of the weights. For the hospital-level outcomes, the largest weight on any control is at most 0.03 and the five largest controls account for at most 15 percent of the weight, so no estimate depends on a small number of controls. The state-level outcomes have far fewer controls, 5 to 21 states depending on the cohort, so their weights are necessarily more concentrated.
 
 Whether converters and the control pool were on different paths before designation indicates how much the SDID weights have to correct and which outcomes show restructuring before designation. Table~\ref{tab:diag-pretrend} therefore reports pre-trend tests on the unweighted balanced panel, regressing each outcome on the interaction of event time and treatment status over pre-treatment observations. The fit of the synthetic control itself is visible in the treated and synthetic paths in the main-text figures.
 
-The FTE RN outcome shows evidence of differential pre-trends in the 1999 and 2000 cohorts (Table~\ref{tab:diag-pretrend}). This is consistent with treated hospitals already reducing staffing before formal designation, reflecting the restructuring required to meet eligibility requirements, which the main text examines directly by dating treatment one year earlier.
+The FTE RN outcome shows evidence of differential pre-trends in the 1999 and 2000 cohorts (Table~\ref{tab:diag-pretrend}). This is consistent with treated hospitals already reducing staffing before formal designation, reflecting the restructuring required to meet eligibility requirements, which the main text examines directly by dating treatment one year earlier. System membership shows a similar pattern in the 1999 and 2000 cohorts, with converters less likely than the unweighted control pool to belong to a system in the years before designation.
 
 Among the financial outcomes, operating margin and the current ratio show statistically significant differential pre-trends in the 2000 and 2001 cohorts, total operating expenses per bed in the 1999 cohort, and net fixed assets in the 2000 cohort, while net patient revenue per bed shows none. The margin and expense pre-trends are consistent with the same pre-designation restructuring, in which converters' margins decline in the two years before designation as they shed scale, a pattern the main text documents directly. As shown in Section~\ref{sec:app-sample}, SDID point estimates for the financial outcomes are stable across pre-period lengths of 2--5 years. Among the organizational outcomes, closures show marginal pre-trends of opposite sign in the 2000 and 2001 cohorts and mergers in 1999, none at the 5 percent level.
 
@@ -136,7 +136,7 @@ Our results may be sensitive to how the estimation sample is defined. In this se
 \paragraph{\textit{State-level adoption lags.}}
 Our main specification constructs the not-yet-treated control group by requiring that a state's first CAH designation occur strictly after the cohort year. Formally, for a treated cohort converting in year $t$, a not-yet-treated hospital enters the control pool only if its state's first CAH designation year satisfies $s > t + \delta$, where $\delta = 0$ in the baseline. Increasing $\delta$ strengthens the exclusion by removing states whose CAH programs begin shortly after the cohort year, reducing the risk that anticipation effects or early program spillovers contaminate the control group. The cost is a smaller control pool, which reduces precision and may alter the composition of comparison units.
 
-Figure~\ref{fig:statecut-sensitivity} presents SDID estimates for all outcomes at $\delta = 1$ and $\delta = 2$ alongside the baseline ($\delta = 0$). We do not report $\delta = 3$ because the earliest cohort (1999) can only draw controls from states adopting in 2003 or later, leaving too few comparison units for reliable estimation. The shaded band in each panel spans the baseline 95\% confidence interval, and the dashed vertical line marks the baseline point estimate. Across all outcomes, the sensitivity estimates remain qualitatively similar to the baseline, showing capacity reductions, system membership increases, and positive margin effects at both lag values. Point estimates generally fall within or near the baseline confidence band, confirming that our findings are not driven by contamination from states that adopt CAH programs shortly after the cohort year.
+Figure~\ref{fig:statecut-sensitivity} presents SDID estimates for all outcomes at $\delta = 1$ and $\delta = 2$ alongside the baseline ($\delta = 0$). We do not report $\delta = 3$ because the earliest cohort (1999) can only draw controls from states adopting in 2003 or later, leaving too few comparison units for reliable estimation. The shaded band in each panel spans the baseline 95\% confidence interval, and the dashed vertical line marks the baseline point estimate. Across all outcomes, the sensitivity estimates remain qualitatively similar to the baseline, showing capacity reductions and positive margin effects at both lag values. Point estimates generally fall within or near the baseline confidence band, confirming that our findings are not driven by contamination from states that adopt CAH programs shortly after the cohort year.
 
 \paragraph{\textit{Post-period event window.}}
 Our baseline uses a 5-year post-period, meaning control hospitals must not convert to CAH within 5 years of the cohort year. This requirement mechanically excludes hospitals that convert soon after their state opens the CAH program, selecting late- or never-converters into the control pool. If these hospitals differ systematically from treated hospitals (e.g., in financial health, management capacity, or payer mix), the exclusion could bias the comparison. Shortening the post-period to 4, 3, or 2 years relaxes this restriction, allowing hospitals that took up CAH relatively quickly after state implementation to serve as controls. Figure~\ref{fig:postperiod-sensitivity} reports SDID estimates at post-period lengths of 5, 4, 3, and 2 years. The results are broadly stable across all post-period lengths, with capacity reductions, closure effects, and positive margin effects persisting even at the shortest 2-year window.
@@ -168,9 +168,9 @@ Table~\ref{tab:elig-overall} reports overall ATT estimates from the eligibility-
 \section{Alternative Estimators}
 \label{sec:app-alt}
 
-\subsection{Callaway--Sant'Anna Event-Study Estimates}
+\subsection{SDID Paths and Event-Time Estimates}
 
-This section presents Callaway and Sant'Anna (CS) event-study estimates. Event studies based on the state-timing design are presented in Figures~\ref{fig:cs-financial}--\ref{fig:cs-visits}, which underlie the overall CS ATTs presented in the main text. Analogous event-study estimates for the eligibility-restricted design are presented in Figures~\ref{fig:elig-cs-financial}--\ref{fig:elig-cs-visits}, along with the overall ATTs in Tables~\ref{tab:elig-overall} and~\ref{tab:visits-cs}.
+The main text reports SDID and Callaway and Sant'Anna (CS) effects by year relative to designation on the same axes. This section presents the treated and synthetic control paths underlying the SDID estimates for the state-timing design (Figures~\ref{fig:levels-financial}--\ref{fig:levels-org}), with the cohort-specific and pooled ATTs noted on each panel. We also report the SDID and CS event-time estimates for the eligibility-restricted design (Figures~\ref{fig:elig-overlay-financial}--\ref{fig:elig-overlay-visits}), with the corresponding pooled ATTs in Tables~\ref{tab:elig-overall} and~\ref{tab:visits-cs}.
 
 \subsection{Interactive Fixed Effects Estimates}
 
@@ -179,6 +179,14 @@ Our primary SDID estimates require balanced panels, which can substantially redu
 We apply the IFE estimator to all financial and operational outcomes using the eligibility-restricted control group construction and a five-year pre-period. The operational outcomes use cohorts 1999--2005. The financial outcomes use cohorts 2001--2005, because the estimator requires at least five pre-treatment years and our financial series begins in 1996. For each cohort, we select the number of factors (0--5) by leave-one-out cross-validation and compute bootstrap standard errors (150 replications). Cohort-level ATTs are aggregated using the same treated-count weighting as our SDID estimates.
 
 The IFE estimates are broadly consistent with the main SDID findings (Table~\ref{tab:gsynth}). Beds, OB beds, and FTE RNs decline by comparable magnitudes, and operating margin rises by 0.026 (95\% CI $[0.02, 0.03]$). Operating expenses per bed decline as under SDID, but net patient revenue per bed rises under IFE, so the revenue side of the decomposition is less stable across estimators than the margin itself. The current ratio, net fixed assets, and capital expenditures are close to zero. Ultimately, these estimates suggest that the main SDID results for capacity and margins do not depend on the balanced-panel restriction, nor do they appear to reflect differential trends that a latent factor structure would absorb.
+
+\section{Sensitivity to Pre-Existing Trends}
+\label{sec:app-pretrend}
+
+For some outcomes, most visibly nurse staffing, births, and operating margins, the event-time estimates in the main text differ from zero before designation. This section examines how sensitive the main estimates are to such pre-existing trends, following \citet{rambachan2023}. For each outcome and estimator, we take the pooled event-time estimates and their covariance, measure them relative to the year before designation, and compute confidence sets for the average effect over the five years after designation that remain valid if the differential trend observed before designation continues afterward. The restriction allows the slope of that trend to change by at most $M$ per year, so $M = 0$ extends the pre-designation trend as a straight line and larger values let it bend; we express $M$ in multiples of the largest change in slope observed before designation.
+
+Table~\ref{tab:pretrend} reports, for each estimator, the confidence interval from the main text and the interval under the straight-line extension of the pre-designation trend, and Figures~\ref{fig:pretrend-sens-financial} to~\ref{fig:pretrend-sens-visits} plot the confidence sets as $M$ increases for every outcome. The results suggest that our estimates for operating margin are robust to potential violations of parallel trends. Results for other financial outcomes suggest a slight increase relative to the extended pre-trend, while our estimated reductions in FTE RNs and births are sensitive to such violations. Point estimates for all other outcomes are similar, albeit less precisely estimated.
+
 
 %%% ===================================================================
 %%% SECTION 5: Permutation Inference
@@ -189,7 +197,7 @@ The IFE estimates are broadly consistent with the main SDID findings (Table~\ref
 
 The SDID estimator computes standard errors via the jackknife, which may perform poorly with small numbers of treated units. As a nonparametric alternative, we implement a permutation test. For each outcome, we randomly reassign treatment status among units within each cohort's balanced panel, holding the number of treated units fixed, and re-estimate the SDID ATT. We repeat this procedure 500 times to construct a placebo distribution. The permutation $p$-value is the fraction of placebo ATTs at least as extreme in absolute value as the actual estimate.
 
-Figure~\ref{fig:permutation} displays the placebo distributions for all outcomes, and the main text reports the permutation $p$-values alongside the jackknife intervals. The permutation $p$-values are consistent with the jackknife-based confidence intervals. Total beds, OB beds, FTE RNs, operating margin, operating expenses per bed, and closures reject the null at conventional levels under both, while the current ratio, net fixed assets, capital expenditures, inpatient days per bed, and mergers do not under either. Net patient revenue per bed and system membership are significant under the jackknife but not under permutation ($p = 0.07$ and $0.09$). This alignment suggests that the jackknife standard errors provide a reasonable basis for inference despite the small number of treated units.
+Figure~\ref{fig:permutation} displays the placebo distributions for all outcomes, and the main text reports the permutation $p$-values alongside the jackknife intervals. The permutation $p$-values are consistent with the jackknife-based confidence intervals. Total beds, OB beds, FTE RNs, operating margin, operating expenses per bed, and closures reject the null at conventional levels under both, while the current ratio, net fixed assets, capital expenditures, inpatient days per bed, mergers, and system membership do not under either. Net patient revenue per bed is significant under the jackknife but not under permutation ($p = 0.07$). This alignment suggests that the jackknife standard errors provide a reasonable basis for inference despite the small number of treated units.
 
 
 %%% ===================================================================
@@ -289,7 +297,7 @@ The main text reports estimates with treatment dated one year before designation
 \centering
 \footnotesize
 \begin{minipage}[h]{6in}
-\caption[Eligibility-Restricted ATT Estimates]{\textbf{ATT Estimates: Eligibility-Restricted Control Group}\footnote{ATT estimates from SDID and Callaway--Sant'Anna estimators using the eligibility-restricted control group (all non-CAH hospitals with $\leq 50$ beds). Cohorts span 1999--2005. $N_{tr}$ reports the total number of treated units across cohorts in the SDID balanced panel. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
+\caption[Eligibility-Restricted ATT Estimates]{\textbf{ATT Estimates: Eligibility-Restricted Control Group}\footnote{ATT estimates from SDID and Callaway--Sant'Anna (CS) estimators using the eligibility-restricted control group (all non-CAH hospitals with $\leq 50$ beds). Cohorts span 1999--2005. CS estimates are estimated on the same sample and cohorts as the SDID estimates, without covariates. $N_{tr}$ reports the total number of treated units across cohorts in the SDID balanced panel. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
 \label{tab:elig-overall}
 \centerline{\input{../results/att_elig_overall.tex}}
 \end{minipage}
@@ -309,6 +317,18 @@ The main text reports estimates with treatment dated one year before designation
 \caption[IFE ATT Estimates]{\textbf{Interactive Fixed Effects ATT Estimates}\footnote{ATT estimates from the interactive fixed effects (IFE) counterfactual estimator. The number of factors is selected by cross-validation for each cohort. Revenue and expense measures are in thousands of 2010 dollars per bed. $N_{tr}$ reports the total number of treated units across cohorts. Bootstrap standard errors based on 150 replications. Financial outcomes pool cohorts 2001--2005.}}
 \label{tab:gsynth}
 \centerline{\input{../results/att_gsynth.tex}}
+\end{minipage}
+\end{table}
+
+\clearpage
+
+\begin{table}[!h]
+\centering
+\footnotesize
+\begin{minipage}[h]{6.3in}
+\caption[Pre-Trend Sensitivity]{\textbf{Sensitivity of the Average Post-Designation Effect to Pre-Existing Trends}\footnote{For each estimator, the 95\% confidence interval reported in the main text and the confidence interval for the same average effect over years 0 to 5 when the differential trend observed before designation is extended into the post-period as a straight line, the smoothness restriction of \citet{rambachan2023} with $M = 0$. Event-time estimates are referenced to the year before designation. Financial outcomes use a three-year pre-period.}}
+\label{tab:pretrend}
+\centerline{\resizebox{\linewidth}{!}{\input{../results/att_pretrend.tex}}}
 \end{minipage}
 \end{table}
 
@@ -446,23 +466,20 @@ The main text reports estimates with treatment dated one year before designation
 
 \clearpage
 
-%%% Alternative Estimator Figures
+%%% SDID Paths (treated and synthetic control means) and Event-Time Estimates
 
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[CS Event Studies: Financial]{\textbf{CS Event-Study Estimates: Financial Performance and Capital}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
-\label{fig:cs-financial}
+\caption[SDID Paths: Financial]{\textbf{SDID Treated and Synthetic Control Paths: Financial Performance}\footnote{The figures present the mean outcome among treated and synthetic control hospitals over time, with the SDID treatment effect estimates noted in the upper right of each figure, for each cohort (1999, 2000, and 2001) and as a weighted average overall ATT, as detailed in the main text. The event-time effects built from these paths are in the main text. Revenue and expense measures are deflated by the CPI-U and expressed in thousands of 2010 dollars per bed, with mean hospital beds calculated from 1995 up to (not including) the cohort year.}}
+\label{fig:levels-financial}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/margin-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/currentratio-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/margin-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/currentratio-sdid.png} \\
 \small (a) Operating Margin & \small (b) Current Ratio \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/netpatrev-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/totopexp-cs.png} \\
-\small (c) Net Patient Revenue per Bed & \small (d) Operating Expenses per Bed \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/netfixed-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/capex-cs.png} \\
-\small (e) Net Fixed Assets & \small (f) Capital Expenditures
+\includegraphics[width=0.48\textwidth]{../results/netpatrev-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/totopexp-sdid.png} \\
+\small (c) Net Patient Revenue per Bed & \small (d) Operating Expenses per Bed
 \end{tabular}
 \end{minipage}
 \end{figure}
@@ -472,14 +489,29 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[CS Event Studies: Capacity]{\textbf{CS Event-Study Estimates: Capacity and Staffing}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period.}}
-\label{fig:cs-capacity}
+\caption[SDID Paths: Capital]{\textbf{SDID Treated and Synthetic Control Paths: Capital Stock and Investment}\footnote{The figures present the mean outcome among treated and synthetic control hospitals over time, with the SDID treatment effect estimates noted in the upper right of each figure, for each cohort (1999, 2000, and 2001) and as a weighted average overall ATT, as detailed in the main text. The event-time effects built from these paths are in the main text. Both measures are deflated by the CPI-U and expressed per bed.}}
+\label{fig:levels-capital}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/beds-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/beds_ob-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/netfixed-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/capex-sdid.png} \\
+\small (a) Net Fixed Assets & \small (b) Capital Expenditures
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[SDID Paths: Capacity]{\textbf{SDID Treated and Synthetic Control Paths: Capacity and Staffing}\footnote{The figures present the mean outcome among treated and synthetic control hospitals over time, with the SDID treatment effect estimates noted in the upper right of each figure, for each cohort (1999, 2000, and 2001) and as a weighted average overall ATT, as detailed in the main text. The event-time effects built from these paths are in the main text.}}
+\label{fig:levels-capacity}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/beds-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/beds_ob-sdid.png} \\
 \small (a) Total Beds & \small (b) Obstetric Beds \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/ftern-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/ipdays-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/ftern-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/ipdays-sdid.png} \\
 \small (c) Full Time Equivalent RNs & \small (d) Inpatient Days per Bed
 \end{tabular}
 \end{minipage}
@@ -490,31 +522,14 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[CS Event Studies: Organizational]{\textbf{CS Event-Study Estimates: Organizational Changes}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Closures and mergers are state-level counts per 100 hospitals.}}
-\label{fig:cs-org}
+\caption[SDID Paths: Visits and Births]{\textbf{SDID Treated and Synthetic Control Paths: Outpatient Visits, Emergency Department Visits, and Births}\footnote{The figures present the mean outcome among treated and synthetic control hospitals over time, with the SDID treatment effect estimates noted in the upper right of each figure, for each cohort (1999, 2000, and 2001) and as a weighted average overall ATT, as detailed in the main text. The event-time effects built from these paths are in the main text. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
+\label{fig:levels-visits}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/closure-rate-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/merger-rate-cs.png} \\
-\small (a) Closures (per 100 hospitals) & \small (b) Mergers (per 100 hospitals) \\[0.5cm]
-\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/system-cs.png}} \\
-\multicolumn{2}{c}{\small (c) System Membership}
-\end{tabular}
-\end{minipage}
-\end{figure}
-
-\clearpage
-
-\begin{figure}[!h]
-\centering
-\begin{minipage}[h]{6in}
-\caption[CS Event Studies: Visits and Births]{\textbf{CS Event-Study Estimates: Outpatient Visits, Emergency Department Visits, and Births}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, state-timing design (cohorts 1999--2001), not-yet-treated control group, universal base period. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
-\label{fig:cs-visits}
-\begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/opvisits-state-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-state-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/opvisits-state-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-state-sdid.png} \\
 \small (a) Outpatient Visits per Bed & \small (b) Non-ED Outpatient Visits per Bed \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/edvisits-state-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/births-state-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/edvisits-state-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/births-state-sdid.png} \\
 \small (c) Emergency Department Visits per Bed & \small (d) Births
 \end{tabular}
 \end{minipage}
@@ -525,17 +540,34 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[CS Event Studies (Eligibility): Financial]{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Financial Performance and Capital}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
-\label{fig:elig-cs-financial}
+\caption[SDID Paths: Organizational]{\textbf{SDID Treated and Synthetic Control Paths: Organizational Changes}\footnote{The figures present the mean outcome among treated and synthetic control hospitals over time, with the SDID treatment effect estimates noted in the upper right of each figure, for each cohort (1999, 2000, and 2001) and as a weighted average overall ATT, as detailed in the main text. The event-time effects built from these paths are in the main text. Closures and mergers are state-level counts rescaled by the mean pre-period hospital count to express outcomes per 100 hospitals.}}
+\label{fig:levels-org}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/elig-margin-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/elig-currentratio-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/closure-rate-sdid.png} &
+\includegraphics[width=0.48\textwidth]{../results/merger-rate-sdid.png} \\
+\small (a) Closures (per 100 hospitals) & \small (b) Mergers (per 100 hospitals) \\[0.5cm]
+\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/system-sdid.png}} \\
+\multicolumn{2}{c}{\small (c) System Membership}
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Eligibility-Restricted Event-Time Estimates: Financial]{\textbf{SDID and Callaway--Sant'Anna Event-Time Estimates (Eligibility-Restricted): Financial Performance and Capital}\footnote{Estimated effects of CAH designation by year relative to designation, eligibility-restricted design (cohorts 1999--2005), with 95\% confidence intervals. Circles are SDID effects, the difference between treated hospitals and their synthetic control in each year net of the time-weighted pre-designation difference, with jackknife standard errors; triangles are Callaway--Sant'Anna effects, estimated on the same sample and cohorts as the SDID estimates, without covariates. Revenue and expense measures are in thousands of 2010 dollars per bed.}}
+\label{fig:elig-overlay-financial}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/elig-margin-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/elig-currentratio-overlay.png} \\
 \small (a) Operating Margin & \small (b) Current Ratio \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/elig-netpatrev-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/elig-totopexp-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/elig-netpatrev-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/elig-totopexp-overlay.png} \\
 \small (c) Net Patient Revenue per Bed & \small (d) Operating Expenses per Bed \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/elig-netfixed-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/elig-capex-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/elig-netfixed-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/elig-capex-overlay.png} \\
 \small (e) Net Fixed Assets & \small (f) Capital Expenditures
 \end{tabular}
 \end{minipage}
@@ -546,16 +578,16 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[CS Event Studies (Eligibility): Capacity]{\textbf{CS Event-Study Estimates (Eligibility-Restricted): Capacity, Staffing, and System Membership}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period.}}
-\label{fig:elig-cs-capacity}
+\caption[Eligibility-Restricted Event-Time Estimates: Capacity]{\textbf{SDID and Callaway--Sant'Anna Event-Time Estimates (Eligibility-Restricted): Capacity, Staffing, and System Membership}\footnote{Estimated effects of CAH designation by year relative to designation, eligibility-restricted design (cohorts 1999--2005), with 95\% confidence intervals. Circles are SDID effects, the difference between treated hospitals and their synthetic control in each year net of the time-weighted pre-designation difference, with jackknife standard errors; triangles are Callaway--Sant'Anna effects, estimated on the same sample and cohorts as the SDID estimates, without covariates.}}
+\label{fig:elig-overlay-capacity}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/elig-beds-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/elig-beds_ob-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/elig-beds-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/elig-beds_ob-overlay.png} \\
 \small (a) Total Beds & \small (b) Obstetric Beds \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/elig-ftern-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/elig-ipdays-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/elig-ftern-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/elig-ipdays-overlay.png} \\
 \small (c) Full Time Equivalent RNs & \small (d) Inpatient Days per Bed \\[0.5cm]
-\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/elig-system-cs.png}} \\
+\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/elig-system-overlay.png}} \\
 \multicolumn{2}{c}{\small (e) System Membership}
 \end{tabular}
 \end{minipage}
@@ -566,14 +598,73 @@ The main text reports estimates with treatment dated one year before designation
 \begin{figure}[!h]
 \centering
 \begin{minipage}[h]{6in}
-\caption[Eligibility-Restricted CS Event Studies: Visits and Births]{\textbf{Eligibility-Restricted CS Event-Study Estimates: Outpatient Visits, Emergency Department Visits, and Births}\footnote{Callaway--Sant'Anna event-study estimates with 95\% confidence intervals by years relative to designation, eligibility-restricted design (cohorts 1999--2005), not-yet-treated control group, universal base period. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
-\label{fig:elig-cs-visits}
+\caption[Eligibility-Restricted Event-Time Estimates: Visits and Births]{\textbf{SDID and Callaway--Sant'Anna Event-Time Estimates (Eligibility-Restricted): Outpatient Visits, Emergency Department Visits, and Births}\footnote{Estimated effects of CAH designation by year relative to designation, eligibility-restricted design (cohorts 1999--2005), with 95\% confidence intervals. Circles are SDID effects, the difference between treated hospitals and their synthetic control in each year net of the time-weighted pre-designation difference, with jackknife standard errors; triangles are Callaway--Sant'Anna effects, estimated on the same sample and cohorts as the SDID estimates, without covariates. Visit outcomes are annual counts per pre-designation bed; births are annual counts.}}
+\label{fig:elig-overlay-visits}
 \begin{tabular}{cc}
-\includegraphics[width=0.48\textwidth]{../results/opvisits-elig-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-elig-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/opvisits-elig-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/opvisits-noned-elig-overlay.png} \\
 \small (a) Outpatient Visits per Bed & \small (b) Non-ED Outpatient Visits per Bed \\[0.5cm]
-\includegraphics[width=0.48\textwidth]{../results/edvisits-elig-cs.png} &
-\includegraphics[width=0.48\textwidth]{../results/births-elig-cs.png} \\
+\includegraphics[width=0.48\textwidth]{../results/edvisits-elig-overlay.png} &
+\includegraphics[width=0.48\textwidth]{../results/births-elig-overlay.png} \\
+\small (c) Emergency Department Visits per Bed & \small (d) Births
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Pre-Trend Sensitivity: Financial and Capital]{\textbf{Sensitivity to Pre-Existing Trends: Financial Performance, Capital Stock, and Investment}\footnote{Confidence sets for the average effect over years 0 to 5 under the smoothness restriction of \citet{rambachan2023}, from the event-time estimates in the main text referenced to the year before designation. The differential trend observed before designation is extended into the post-period with a slope that may change by at most $M$ per year, with $M$ in multiples of the largest change in slope observed before designation; $M = 0$ is the straight-line extension of the pre-designation trend. Circles are SDID and triangles are Callaway--Sant'Anna. The shaded band is the SDID confidence interval and the dotted lines mark the Callaway--Sant'Anna confidence interval reported in the main text.}}
+\label{fig:pretrend-sens-financial}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-margin.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-currentratio.png} \\
+\small (a) Operating Margin & \small (b) Current Ratio \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-netpatrev.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-totopexp.png} \\
+\small (c) Net Patient Revenue per Bed & \small (d) Operating Expenses per Bed \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-netfixed.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-capex.png} \\
+\small (e) Net Fixed Assets & \small (f) Capital Expenditures
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Pre-Trend Sensitivity: Capacity, Staffing, and System Membership]{\textbf{Sensitivity to Pre-Existing Trends: Capacity, Staffing, and System Membership}\footnote{Confidence sets for the average effect over years 0 to 5 under the smoothness restriction of \citet{rambachan2023}, from the event-time estimates in the main text referenced to the year before designation. The differential trend observed before designation is extended into the post-period with a slope that may change by at most $M$ per year, with $M$ in multiples of the largest change in slope observed before designation; $M = 0$ is the straight-line extension of the pre-designation trend. Circles are SDID and triangles are Callaway--Sant'Anna. The shaded band is the SDID confidence interval and the dotted lines mark the Callaway--Sant'Anna confidence interval reported in the main text.}}
+\label{fig:pretrend-sens-capacity}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-beds.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-beds_ob.png} \\
+\small (a) Total Beds & \small (b) Obstetric Beds \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-ftern.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-ipdays.png} \\
+\small (c) Full Time Equivalent RNs & \small (d) Inpatient Days per Bed \\[0.5cm]
+\multicolumn{2}{c}{\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-system.png}} \\
+\multicolumn{2}{c}{\small (e) System Membership}
+\end{tabular}
+\end{minipage}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[h]{6in}
+\caption[Pre-Trend Sensitivity: Visits and Births]{\textbf{Sensitivity to Pre-Existing Trends: Outpatient Visits, Emergency Department Visits, and Births}\footnote{Confidence sets for the average effect over years 0 to 5 under the smoothness restriction of \citet{rambachan2023}, from the event-time estimates in the main text referenced to the year before designation. The differential trend observed before designation is extended into the post-period with a slope that may change by at most $M$ per year, with $M$ in multiples of the largest change in slope observed before designation; $M = 0$ is the straight-line extension of the pre-designation trend. Circles are SDID and triangles are Callaway--Sant'Anna. The shaded band is the SDID confidence interval and the dotted lines mark the Callaway--Sant'Anna confidence interval reported in the main text.}}
+\label{fig:pretrend-sens-visits}
+\begin{tabular}{cc}
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-opvisits.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-opvisits-noned.png} \\
+\small (a) Outpatient Visits per Bed & \small (b) Non-ED Outpatient Visits per Bed \\[0.5cm]
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-edvisits.png} &
+\includegraphics[width=0.48\textwidth]{../results/pretrend-sens-births.png} \\
 \small (c) Emergency Department Visits per Bed & \small (d) Births
 \end{tabular}
 \end{minipage}

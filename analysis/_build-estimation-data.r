@@ -120,31 +120,6 @@ hosp.beds <- final.dat %>%
 est.dat <- final.dat %>%
   left_join(hosp.beds, by="ID") %>%
   left_join(cpi.final , by="year") %>%
-  mutate(margin_990=case_when(
-            !is.na(margin_1) ~ margin_1,
-            is.na(margin_1) & !is.na(margin_2) ~ margin_2,
-            is.na(margin_1) & is.na(margin_2) & !is.na(margin_3) ~ margin_3),
-         net_pat_rev_990=case_when(
-            !is.na(total_revenue_1) ~ total_revenue_1,
-            is.na(total_revenue_1) & !is.na(total_revenue_2) ~ total_revenue_2,
-            is.na(total_revenue_1) & is.na(total_revenue_2) & !is.na(total_revenue_3) ~ total_revenue_3),
-         tot_operating_exp_990=case_when(
-            !is.na(total_expenses_1) ~ total_expenses_1,
-            is.na(total_expenses_1) & !is.na(total_expenses_2) ~ total_expenses_2,
-            is.na(total_expenses_1) & is.na(total_expenses_2) & !is.na(total_expenses_3) ~ total_expenses_3),
-         net_fixed_990=case_when(
-            !is.na(net_fixed_1) ~ net_fixed_1,
-            is.na(net_fixed_1) & !is.na(net_fixed_2) ~ net_fixed_2,
-            is.na(net_fixed_1) & is.na(net_fixed_2) & !is.na(net_fixed_3) ~ net_fixed_3),
-         depreciation_990=case_when(
-            !is.na(depreciation_1) ~ depreciation_1,
-            is.na(depreciation_1) & !is.na(depreciation_2) ~ depreciation_2,
-            is.na(depreciation_1) & is.na(depreciation_2) & !is.na(depreciation_3) ~ depreciation_3),
-         current_ratio_990=case_when(
-            !is.na(current_ratio_1) ~ current_ratio_1,
-            is.na(current_ratio_1) & !is.na(current_ratio_2) ~ current_ratio_2,
-            is.na(current_ratio_1) & is.na(current_ratio_2) & !is.na(current_ratio_3) ~ current_ratio_3)
-          ) %>%
   mutate(
     ip_per_bed=IPDTOT/beds_base,
     gross_fixed = fixed_assets + accum_dep,
@@ -163,8 +138,7 @@ est.dat <- final.dat %>%
   ) %>%
   group_by(ID) %>%
   arrange(year, .by_group=TRUE) %>%
-  mutate(capex_990=net_fixed_990 - lag(net_fixed_990) + depreciation_990,
-         capex=gross_fixed - lag(gross_fixed)) %>%
+  mutate(capex=gross_fixed - lag(gross_fixed)) %>%
   ungroup() %>%
   group_by(year, ever_cah) %>%
   mutate(
@@ -174,14 +148,6 @@ est.dat <- final.dat %>%
     capex         = winsor_by_year(capex),
     net_pat_rev       = winsor_by_year(net_pat_rev),
     tot_operating_exp = winsor_by_year(tot_operating_exp),
-    ## Form-990-only versions, processed identically. Used only by the R2.5
-    ## source comparison in R1_revision.R.
-    margin_9        = winsor_by_year(ifelse(margin_990 > -1 & margin_990 < 1, margin_990, NA_real_)),
-    net_fixed_9     = winsor_by_year(net_fixed_990),
-    current_ratio_9 = winsor_by_year(current_ratio_990),
-    capex_9         = winsor_by_year(capex_990),
-    net_pat_rev_9       = winsor_by_year(net_pat_rev_990),
-    tot_operating_exp_9 = winsor_by_year(tot_operating_exp_990),
     BDTOT         = winsor_by_year(BDTOT),
     OBBD          = winsor_by_year(OBBD),
     FTERN         = winsor_by_year(FTERN),
@@ -193,11 +159,7 @@ est.dat <- final.dat %>%
     net_fixed    = net_fixed / 1e6 / beds_base / cpi_deflator,
     capex        = capex / 1e4 / beds_base / cpi_deflator,
     net_pat_rev       = net_pat_rev / 1e3 / beds_base / cpi_deflator,
-    tot_operating_exp = tot_operating_exp / 1e3 / beds_base / cpi_deflator,
-    net_fixed_9    = net_fixed_9 / 1e6 / beds_base / cpi_deflator,
-    capex_9        = capex_9 / 1e4 / beds_base / cpi_deflator,
-    net_pat_rev_9       = net_pat_rev_9 / 1e3 / beds_base / cpi_deflator,
-    tot_operating_exp_9 = tot_operating_exp_9 / 1e3 / beds_base / cpi_deflator
+    tot_operating_exp = tot_operating_exp / 1e3 / beds_base / cpi_deflator
   ) %>%
   arrange(ID, year) %>%
   group_by(ID) %>%
@@ -212,10 +174,7 @@ est.dat <- final.dat %>%
          IPDTOT = na.approx(IPDTOT, x=year, na.rm=FALSE),
          ip_per_bed = na.approx(ip_per_bed, x=year, na.rm=FALSE),
          net_pat_rev = na.approx(net_pat_rev, x=year, na.rm=FALSE),
-         tot_operating_exp = na.approx(tot_operating_exp, x=year, na.rm=FALSE),
-         across(c(margin_9, net_fixed_9, current_ratio_9, capex_9,
-                  net_pat_rev_9, tot_operating_exp_9),
-                ~ na.approx(.x, x = year, na.rm = FALSE))) %>%
+         tot_operating_exp = na.approx(tot_operating_exp, x=year, na.rm=FALSE)) %>%
   ungroup()
 
 

@@ -1,7 +1,6 @@
 # Fuzzy Matching Wrapper
 #
 # Loads packages and data, then runs all fuzzy matching scripts:
-#   - fuzzy990.R (Form 990 to AHA)
 #   - fuzzyhcris.R (HCRIS to AHA)
 #   - fuzzycah.R (CAH supplement to AHA)
 #
@@ -15,11 +14,17 @@ source('data-code/functions.R')
 
 # Read Source Data --------------------------------------------------------
 
-aha.combine <- read_csv('data/input/aha_data.csv', show_col_types = FALSE)
+## aha_data.csv runs to 2024; the paper's data end in 2019, and the matching
+## pools hospital attributes across years, so cap it as _build-data.R does.
+aha.combine <- read_csv('data/input/aha_data.csv', show_col_types = FALSE) %>%
+  filter(year <= 2019)
+## HCRIS is capped at 2024, the last cost-report year available when the
+## crosswalk was built: the matching keys on each provider's most common name,
+## city, and zip across its years, so later cost reports would otherwise move it.
 hcris.data <- read_tsv('data/input/hcris_data.txt', show_col_types = FALSE) %>%
-  rename(MCRNUM = provider_number)
+  rename(MCRNUM = provider_number) %>%
+  filter(year <= 2024)
 cah.supplement <- read_csv('data/input/cah_data.csv', show_col_types = FALSE)
-form990.data <- read_tsv('data/input/form990_ahaid.txt', show_col_types = FALSE)
 
 col_names <- names(read_csv('data/input/zcta-to-county.csv', n_max = 0, show_col_types = FALSE))
 state.zip.xwalk <- read_csv('data/input/zcta-to-county.csv', col_names = col_names, skip = 2, show_col_types = FALSE) %>%
@@ -86,52 +91,7 @@ aha.collapsed <- aha.small %>%
   ) %>%
   mutate(aha_id = row_number())
 
-# All historical name/state/zip variants per hospital (used by fuzzy990.R)
-# Filters to complete records only - variants with NA state/zip can't be matched anyway
-aha.variants <- aha.small %>%
-  mutate(ID = as.character(ID)) %>%
-  distinct(ID, name_clean, state, zip) %>%
-  filter(!is.na(state), !is.na(zip)) %>%
-  mutate(variant_id = row_number())
-
-# Prepare Form 990 data (used by fuzzy990.R) ------------------------------
-
-# Keyword filter for likely hospitals
-hospital_keywords <- "hospital|medical|health"
-
-# Exclude non-hospital entities that file Form 990s with similar names
-exclude_patterns <- c(
-  "foundation", "fdn", "fndtn", "fdtn",
-  "trust", " tr$", " tr ",
-  "auxiliary", "guild", "volunteer",
-  "self.ins", "selfins",
-  "employee benefit", "emp bene", "bene tr", "benefit plan",
-  "insurance plan", "insurance guaranty", "insurance guarnaty",
-  "development fund", "endowment fund", "dues fund", "health fund",
-  "retirement"
-)
-
-form990.small <- form990.data %>%
-  filter(is.na(ID_hospital_1)) %>%  # Only unmatched records
-  filter(str_detect(str_to_lower(name), hospital_keywords)) %>%
-  filter(!str_detect(str_to_lower(name), paste(exclude_patterns, collapse = "|"))) %>%
-  mutate(
-    zip = str_pad(substr(as.character(zip), 1, 5), width = 5, side = "left", pad = "0"),
-    zip = if_else(str_detect(zip, "^[0-9]{5}$") & zip != "00000", zip, NA_character_),
-    state = str_to_lower(state),
-    state = if_else(state %in% valid_states, state, NA_character_)
-  ) %>%
-  filter(!is.na(state), !is.na(zip)) %>%  # Filter to complete records
-  distinct(ein, name, state, zip) %>%
-  mutate(
-    form990_row_id = row_number(),
-    name_raw = str_to_lower(name),
-    name_clean = preprocess_hospital_name(name)
-  ) %>%
-  filter(!is.na(name_clean), name_clean != "")
-
 # Run fuzzy matching scripts ----------------------------------------------
 
-source('data-code/fuzzy990.R')
 source('data-code/fuzzyhcris.R')
 source('data-code/fuzzycah.R')

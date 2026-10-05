@@ -24,6 +24,7 @@ source('data-code/functions.R')
 hcris.data <- read_tsv('data/input/hcris_data.txt', show_col_types = FALSE,
                        col_select = c(provider_number, year, name, city, state, zip, net_pat_rev, tot_operating_exp)) %>%
   rename(MCRNUM = provider_number) %>%
+  filter(year <= 2024) %>%
   mutate(MCRNUM = str_pad(str_remove_all(as.character(MCRNUM), "\\D"), 6, side = "left", pad = "0"),
          pn4 = as.numeric(str_sub(MCRNUM, -4)),
          has_fin = !is.na(net_pat_rev) & !is.na(tot_operating_exp))

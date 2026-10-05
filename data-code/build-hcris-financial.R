@@ -23,6 +23,7 @@ xw <- read_csv('data/output/hcris_xw_yearvarying.csv',
 hcris <- read_tsv('data/input/hcris_data.txt', show_col_types = FALSE,
                   col_select = c(provider_number, year, net_pat_rev, tot_operating_exp,
                                  fixed_assets, accum_dep, current_assets, current_liabilities)) %>%
+  filter(year <= 2024) %>%
   mutate(MCRNUM = str_pad(str_remove_all(as.character(provider_number), "\\D"),
                           6, side = "left", pad = "0")) %>%
   select(-provider_number) %>%

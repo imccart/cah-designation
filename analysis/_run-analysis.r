@@ -12,7 +12,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(tidyverse, haven, readxl, janitor, here, zoo, fedmatch, zipcodeR,
                fixest, did, did2s, BMisc, fect, glmnet, nnet, mlogit, survival,
                scales, plotly, panelView, dotwhisker, patchwork, sf,
-               modelsummary, kableExtra, broom, synthdid)
+               modelsummary, kableExtra, broom, synthdid, HonestDiD)
 
 source('analysis/functions.R')
 
@@ -199,4 +199,8 @@ source('analysis/app-control-timing.R')       # -> control-timing-*.png
 
 # --- R&R additional analyses (JPubE R1, JPUBE-D-26-00838) -------------------
 source('analysis/R1_revision.R')
+
+# Pre-trend sensitivity (Rambachan and Roth) on the SDID and CS event-time
+# effects; needs the visit-outcome series from R1_revision.R, so it runs last.
+source('analysis/app-pretrend-sensitivity.R')  # -> pretrend-sens-*.png, att_pretrend.tex
 

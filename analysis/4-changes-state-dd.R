@@ -15,6 +15,9 @@ state.results.table <- tibble(
   sdid_ntr = numeric()
 )
 
+## Event-time effects behind the SDID/CS overlay figures, per 100 hospitals.
+state.event.series <- tibble()
+
 # Main loop -------------------------------------------------------------------
 for (oname in names(state_outcome_map)) {
   o <- state_outcome_map[[oname]]
@@ -104,6 +107,7 @@ for (oname in names(state_outcome_map)) {
 
     est <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
     se  <- synthdid_se(est, method = "jackknife")
+    ev  <- sdid_event(est, setup, c)
 
     w       <- attr(est, "weights")$omega
     Y       <- setup$Y
@@ -126,7 +130,9 @@ for (oname in names(state_outcome_map)) {
       att_se = tibble(cohort = c,
                       att = (as.numeric(est)/denom_c)*100,
                       se  = (as.numeric(se)/denom_c)*100,
-                      Ntr = Ntr)
+                      Ntr = Ntr),
+      sdid_es = ev$es %>%
+        mutate(estimate = (estimate/denom_c)*100, se = (se/denom_c)*100)
     )
   }
 
@@ -263,6 +269,20 @@ for (oname in names(state_outcome_map)) {
   ggsave(paste0("results/", file_stub, "-cs.png"), plot.cs,
          width = 6.5, height = 4.25, dpi = 300, scale=1.5)
 
+  ## SDID per-period effects and the CS dynamic effects on the same axes. The
+  ## state-level CS is one call with states as units and the state's adoption
+  ## year as its group, so its comparison group is state-timing by construction.
+  series <- bind_rows(
+    pool_event(bind_rows(map(out, "sdid_es"))) %>% mutate(estimator = "SDID"),
+    tibble(e = csa.es$egt, estimate = scale_cs * csa.es$att, se = scale_cs * csa.es$se,
+           estimator = "CS")
+  )
+  ggsave(paste0("results/", file_stub, "-overlay.png"),
+         overlay_plot(series, paste0(outcome_label, " per 100 hospitals")),
+         width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
+  state.event.series <- bind_rows(state.event.series,
+    series %>% mutate(outcome = outcome_label))
+
   # Collect results ----------------------------------------------------------
   cs_att_val <- csa.es$overall.att * scale_cs
   cs_se_val  <- csa.es$overall.se * scale_cs
@@ -278,4 +298,6 @@ for (oname in names(state_outcome_map)) {
     sdid_ntr     = sum(atts_all$Ntr)
   ))
 }
+
+write_csv(state.event.series, "results/diagnostics/event-series-statelevel.csv")
 

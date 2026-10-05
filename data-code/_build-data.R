@@ -6,7 +6,6 @@
 ## Description:   Build Analytic Data
 ##
 ## Note: Run fuzzy matching scripts first:
-##   - data-code/fuzzy990.R
 ##   - data-code/fuzzyhcris.R
 ##   - data-code/fuzzycah.R
 
@@ -21,7 +20,11 @@ source('data-code/api-keys.R')
 
 
 # Read-in data ------------------------------------------------------------
-aha.combine <- read_csv('data/input/aha_data.csv', show_col_types = FALSE)
+## aha_data.csv links to aha-data's year-stamped panel (1980-2024). The paper's
+## data end in 2019, and the winsorizing in _build-estimation-data.r runs within
+## year and converter status, so the cap keeps later conversions out of the groups.
+aha.combine <- read_csv('data/input/aha_data.csv', show_col_types = FALSE) %>%
+  filter(year <= 2019)
 
 col_names <- names(read_csv('data/input/zcta-to-county.csv', n_max = 0, show_col_types = FALSE))
 state.zip.xwalk <- read_csv('data/input/zcta-to-county.csv', col_names = col_names, skip = 2, show_col_types = FALSE) %>%
@@ -33,36 +36,12 @@ state.zip.xwalk <- read_csv('data/input/zcta-to-county.csv', col_names = col_nam
   ungroup() %>%
   select(zcta5, state_xwalk = stab)
 
+## HCRIS capped at 2024 everywhere it is read, matching the crosswalk.
 hcris.data <- read_tsv('data/input/hcris_data.txt', show_col_types = FALSE) %>%
+  filter(year <= 2024) %>%
   rename(MCRNUM = provider_number)
 
-form990.data <- read_tsv('data/input/form990_ahaid.txt', show_col_types = FALSE) %>%
-  mutate(total_revenue=abs(total_revenue),
-         total_expenses=abs(total_expenses),
-         total_assets=abs(total_assets),
-         current_assets=abs(current_assets),
-         current_liabilities=abs(current_liabilities),
-         total_liabilities=abs(total_liabilities),
-         depreciation=abs(depreciation),
-         margin=if_else(
-              !is.na(total_revenue) & total_revenue>0 & !is.na(total_expenses) & total_expenses>0,
-              (total_revenue-total_expenses)/total_revenue,
-              NA),
-         current_ratio=if_else(
-              !is.na(current_assets) & current_assets>0 & !is.na(current_liabilities) & current_liabilities>0,
-              current_assets/current_liabilities,
-              NA)) %>%
-  filter(margin>-1, margin<1)
-
 # Read crosswalk files from fuzzy matching scripts ------------------------
-unique.990 <- read_csv('data/output/unique_990.csv', show_col_types = FALSE) %>%
-  mutate(ID = as.character(ID),
-         across(starts_with("ein_"), as.character))
-
-# Ensure form990.data$ein is character for consistent joins
-form990.data <- form990.data %>%
-  mutate(ein = as.character(ein))
-
 aha.crosswalk <- read_csv('data/output/unique_hcris.csv', show_col_types = FALSE) %>%
   mutate(ID = as.character(ID)) %>%
   rename(MCRNUM_xw = MCRNUM)
@@ -93,19 +72,6 @@ aha.cah.dates <- aha.combine %>%
 
 aha.final <- aha.combine %>% 
   left_join(fuzzy.unique.cah, by='ID') %>%
-  left_join(unique.990, by='ID') %>%
-  left_join(form990.data %>% 
-    select(ein_1=ein, year, margin_1=margin, current_ratio_1=current_ratio, 
-          net_fixed_1=fixed_assets, depreciation_1=depreciation,
-          total_revenue_1=total_revenue, total_expenses_1=total_expenses), by=c('ein_1','year')) %>%
-  left_join(form990.data %>% 
-    select(ein_2=ein, year, margin_2=margin, current_ratio_2=current_ratio, 
-           net_fixed_2=fixed_assets, depreciation_2=depreciation,
-           total_revenue_2=total_revenue, total_expenses_2=total_expenses), by=c('ein_2','year')) %>%
-  left_join(form990.data %>% 
-    select(ein_3=ein, year, margin_3=margin, current_ratio_3=current_ratio, 
-           net_fixed_3=fixed_assets, depreciation_3=depreciation,
-           total_revenue_3=total_revenue, total_expenses_3=total_expenses), by=c('ein_3','year')) %>%
   left_join(state.zip.xwalk, by=c("MLOCZIP"="zcta5")) %>%
   mutate(MSTATE=case_when(
       !is.na(MSTATE) ~ MSTATE,
