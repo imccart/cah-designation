@@ -17,7 +17,12 @@ antic_outcome_map <- list(
   OBBD              = list(label="OB beds"),
   FTERN             = list(label="FTE RNs"),
   ip_per_bed        = list(label="Inpatient days per bed"),
-  system            = list(label="System membership")
+  system            = list(label="System membership"),
+  ## AHA visits and births
+  ed_per_bed        = list(label="ED visits per bed"),
+  op_per_bed        = list(label="Outpatient visits per bed"),
+  opnon_per_bed     = list(label="Non-ED outpatient visits per bed"),
+  BIRTHS            = list(label="Births")
 )
 
 antic_cohorts <- 1999:2005

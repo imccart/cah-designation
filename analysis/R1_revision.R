@@ -19,11 +19,6 @@
 ## =====================================================================
 
 
-winsor_by_year <- function(x, probs = c(0.05, 0.95)) {
-  qs <- quantile(x, probs = probs, na.rm = TRUE)
-  pmin(pmax(x, qs[1]), qs[2])
-}
-
 fmt3 <- function(x) ifelse(abs(x) < 5, sprintf("%.3f", x), ifelse(abs(x) < 100, sprintf("%.2f", x), sprintf("%.1f", x)))
 ci3  <- function(lo, hi) sprintf("[%s, %s]", fmt3(lo), fmt3(hi))
 
@@ -124,93 +119,26 @@ write_tabular <- function(lines, header, path, align) {
 
 
 ## ===== E4 / R1.2 — Outpatient, ED visits, births ==============================
-## Same SDID (and CS) specification as the main results, both designs. Visits
-## are counts per pre-designation bed, as for revenue and expenses; births stay
-## a count. Writes results/att_visits.tex (state-timing) and
-## results/att_visits_elig.tex (eligibility-restricted), each with SDID and CS
-## estimates, plus per-outcome SDID path figures and a CSV.
-visits <- read_csv("data/output/aha_visits.csv", show_col_types = FALSE,
-                   col_types = cols(ID = col_character()))
-
-est.dat <- est.dat %>%
-  select(-any_of(c("VEM", "VTOT", "VOTH", "BIRTHS", "ed_per_bed", "op_per_bed", "opnon_per_bed"))) %>%
-  left_join(visits, by = c("ID", "year")) %>%
-  group_by(year, ever_cah) %>%
-  mutate(across(c(VEM, VTOT, VOTH, BIRTHS), winsor_by_year)) %>%
-  ungroup() %>%
-  mutate(ed_per_bed = ifelse(beds_base > 0, VEM / beds_base, NA_real_),
-         op_per_bed = ifelse(beds_base > 0, VTOT / beds_base, NA_real_),
-         opnon_per_bed = ifelse(beds_base > 0, VOTH / beds_base, NA_real_))
-stack.hosp <- stack_hosp(pre.period = 5, post.period = post, state.period = state.cut)
-stack.elig <- stack_hosp_elig(pre.period = 5, post.period = post, cohort.years = 1999:2005)
-
-## Counts per pre-designation bed, as for revenue and expenses. Births stay a
-## count, since dividing births by beds would not mean anything useful.
-visit_map <- list(ed_per_bed = list(label = "ED visits per bed", stub = "edvisits"),
-                  op_per_bed = list(label = "Outpatient visits per bed", stub = "opvisits"),
-                  opnon_per_bed = list(label = "Non-ED outpatient visits per bed", stub = "opvisits-noned"),
-                  BIRTHS = list(label = "Births", stub = "births"))
-visit_rows <- list()
-visit_series <- tibble()
-visit.event.cohort <- tibble()
-visit.event.vcov   <- tibble()
-for (oname in names(visit_map)) {
-  o <- visit_map[[oname]]
-  for (dsg in c("state", "elig")) {
-    s <- rr_sdid(oname, if (dsg == "state") stack.hosp else stack.elig, if (dsg == "state") 1999:2001 else 1999:2005, pre = 5, with_cs = TRUE)
-    cs <- if (is.null(s)) NULL else s$cs
-    if (!is.null(s)) {
-      visit_series <- bind_rows(visit_series, s$series %>% mutate(outcome = o$label, design = dsg))
-      visit.event.cohort <- bind_rows(visit.event.cohort, s$cohort_series %>% mutate(outcome = o$label, design = dsg))
-      visit.event.vcov   <- bind_rows(visit.event.vcov, s$cohort_vcov %>% mutate(outcome = o$label, design = dsg))
-      ## pre_mean is the treated pre-period mean, the base for the percent
-      ## effects quoted in the abstract and Section 4.3.
-      visit_rows[[length(visit_rows) + 1]] <- tibble(outcome = o$label, design = dsg, sdid_att = s$att, sdid_lo = s$lo, sdid_hi = s$hi, sdid_ntr = s$ntr,
-                                                     cs_att = if (is.null(cs)) NA_real_ else cs$att, cs_lo = if (is.null(cs)) NA_real_ else cs$lo, cs_hi = if (is.null(cs)) NA_real_ else cs$hi,
-                                                     pre_mean = s$pre_mean, pct_of_pre_mean = s$att / s$pre_mean)
-      ## Pooled and cohort ATTs in the corner, as in the main SDID figures.
-      att_lab <- paste(
-        "ATT and 95%CI",
-        sprintf("Overall: %.2f [%.2f, %.2f]", s$att, s$lo, s$hi),
-        paste(sprintf("%d: %.2f [%.2f, %.2f]", s$cohorts$cohort, s$cohorts$att,
-                      s$cohorts$att - 1.96 * s$cohorts$se, s$cohorts$att + 1.96 * s$cohorts$se),
-              collapse = "\n"),
-        sep = "\n"
-      )
-      p <- ggplot(s$agg, aes(tau)) +
-        geom_line(aes(y = treated, linetype = "Treated"), linewidth = 0.9) +
-        geom_line(aes(y = synthetic, linetype = "Synthetic control"), linewidth = 0.9) +
-        geom_vline(xintercept = -0.5, linewidth = 1) +
-        scale_linetype_manual(values = c("Treated" = "solid", "Synthetic control" = "dashed")) +
-        labs(x = "Event time", y = o$label, linetype = NULL) + theme_bw(base_size = 13) + theme(legend.position = "bottom") +
-        annotate("text", x = max(s$agg$tau), y = Inf, label = att_lab, hjust = 1, vjust = 1.5, size = 3.5)
-      ggsave(sprintf("results/%s-%s-sdid.png", o$stub, dsg), p, width = 6.5, height = 4.25, dpi = 300)
-      ggsave(sprintf("results/%s-%s-overlay.png", o$stub, dsg), overlay_plot(s$series, o$label),
-             width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
-    }
-    ## CS event study for the appendix, drawn the same way as in 2-hospital-dd.R.
-    if (!is.null(cs)) {
-      est.cs <- cs$es %>%
-        transmute(event_time, estimate, se) %>%
-        mutate(conf.low  = if_else(event_time != -1, estimate - 1.96 * se, 0),
-               conf.high = if_else(event_time != -1, estimate + 1.96 * se, 0))
-      p.cs <- ggplot(est.cs, aes(x = event_time, y = estimate)) +
-        geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
-                      width = 0, linewidth = 0.5, alpha = 0.3, color = "black") +
-        geom_point(size = 2.5, color = "black", stroke = 0.1, fill = "white") +
-        geom_hline(yintercept = 0, color = "black", linewidth = 1) +
-        scale_x_continuous(breaks = seq(-10, 10, by = 1)) +
-        labs(x = "Event time", y = "Estimated Effects") +
-        theme_bw() + theme(legend.position = "none")
-      ggsave(sprintf("results/%s-%s-cs.png", o$stub, dsg), p.cs, width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
-    }
-  }
-}
-visit_res <- bind_rows(visit_rows)
+## The visit outcomes are estimated with the other outcomes in 2-hospital-dd.R
+## (state-timing) and 3-hospital-dd-alt.R (eligibility-restricted). This chunk
+## collects their rows into results/att_visits.tex and
+## results/att_visits_elig.tex and writes the visit series used elsewhere.
+## pre_mean is the treated pre-period mean, the base for the percent effects
+## quoted in the abstract and Section 4.4.
+visit_labels <- c("ED visits per bed", "Outpatient visits per bed",
+                  "Non-ED outpatient visits per bed", "Births")
+visit_res <- bind_rows(
+  hosp.results.table %>% filter(group == "visits") %>% mutate(design = "state"),
+  elig.results %>% filter(group == "visits") %>% mutate(design = "elig")) %>%
+  transmute(outcome, design, sdid_att, sdid_lo = sdid_ci_low, sdid_hi = sdid_ci_high, sdid_ntr,
+            cs_att, cs_lo = cs_ci_low, cs_hi = cs_ci_high,
+            pre_mean, pct_of_pre_mean = sdid_att / pre_mean) %>%
+  arrange(match(outcome, visit_labels), match(design, c("state", "elig")))
+visit_series <- bind_rows(
+  hosp.event.series %>% filter(outcome %in% visit_labels) %>% mutate(design = "state"),
+  elig.event.series %>% filter(outcome %in% visit_labels) %>% mutate(design = "elig"))
 write_csv(visit_res, "results/diagnostics/visits-att.csv")
 write_csv(visit_series, "results/diagnostics/event-series-visits.csv")
-write_csv(visit.event.cohort, "results/diagnostics/event-cohort-visits.csv")
-write_csv(visit.event.vcov, "results/diagnostics/event-vcov-visits.csv")
 dsg_label <- c(state = "State-timing", elig = "Eligibility-restricted")
 ## Main text carries the state-timing design; the eligibility-restricted design
 ## goes to the appendix, matching how the other outcomes are presented.
@@ -226,8 +154,25 @@ visit_line <- function(d) {
 visit_header <- c(" & \\multicolumn{2}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
                   "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}",
                   "Outcome & ATT & 95\\% CI & ATT & 95\\% CI & $N_{tr}$ \\\\")
-write_tabular(visit_line(visit_res %>% filter(design == "state")),
-              visit_header, "results/att_visits.tex", "lccccr")
+## Table 3 carries the permutation p-values next to the jackknife intervals, as Table 2 does
+visit_perm <- read_csv("results/diagnostics/permutation_pvalues.csv", show_col_types = FALSE) %>%
+  select(outcome, p_value)
+visit_perm_lines <- visit_res %>%
+  filter(design == "state") %>%
+  left_join(visit_perm, by = "outcome", relationship = "one-to-one") %>%
+  rowwise() %>%
+  mutate(line = sprintf("%s & %s & %s & %s & %s & %s & %d \\\\", outcome,
+                        fmt3(sdid_att), ci3(sdid_lo, sdid_hi),
+                        ifelse(is.na(p_value), "", sprintf("%.3f", p_value)),
+                        ifelse(is.na(cs_att), "", fmt3(cs_att)),
+                        ifelse(is.na(cs_att), "", ci3(cs_lo, cs_hi)),
+                        sdid_ntr)) %>%
+  pull(line)
+write_tabular(visit_perm_lines,
+              c(" & \\multicolumn{3}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
+                "\\cmidrule(lr){2-4} \\cmidrule(lr){5-6}",
+                "Outcome & ATT & 95\\% CI & Permutation $p$ & ATT & 95\\% CI & $N_{tr}$ \\\\"),
+              "results/att_visits.tex", "lcccccr")
 write_tabular(visit_line(visit_res %>% filter(design == "elig")),
               visit_header, "results/att_visits_elig.tex", "lccccr")
 
@@ -586,27 +531,13 @@ if (exists("het.results")) {
 
 
 ## ===== E5 — Closure ATT by cohort, SDID against Callaway--Sant'Anna ==========
-## The pooled CS closure estimate is smaller in magnitude than SDID. This shows
-## where that comes from: the 2000 and 2001 cohorts, where the not-yet-treated
-## control pool is smallest. CS is estimated once over all three cohorts with
-## states as units, as in 4-changes-state-dd.R, and the group-time estimates
-## are then averaged over each cohort's own five post-treatment years so the
-## horizon matches SDID. No CS standard
-## error is reported, since averaging ATT(g,t) by hand does not carry one.
+## Cohort-level closure ATTs behind the closure footnote. Both estimators use
+## each cohort's balanced SDID state panel: SDID as in 4-changes-state-dd.R and
+## CS through cs_state_cohort() in functions.R, averaged over the cohort's five
+## post-treatment years. Values are per state-year, before the per-100-hospital
+## scaling.
 
-cs.closure <- state.dat %>%
-  mutate(y = closures,
-         ID2 = as.numeric(factor(MSTATE)),
-         treat_group = ifelse(is.na(state_treat_year), 0, state_treat_year)) %>%
-  filter(!is.na(y), treat_group == 0 | treat_group %in% 1999:2001) %>%
-  select(ID2, treat_group, year, y)
-
-cs.closure.raw <- tryCatch(
-  att_gt(yname = "y", gname = "treat_group", idname = "ID2", tname = "year",
-         control_group = "notyettreated", panel = TRUE, allow_unbalanced_panel = TRUE,
-         data = as.data.frame(cs.closure), xformla = ~1,
-         base_period = "universal", est_method = "reg"),
-  error = function(e) NULL)
+adopt.closure <- state.dat %>% distinct(MSTATE, state_treat_year)
 
 closure_cohort <- tibble()
 for (c in 1999:2001) {
@@ -622,12 +553,8 @@ for (c in 1999:2001) {
   sdid.c <- tryCatch(synthdid_estimate(setup.c$Y, setup.c$N0, setup.c$T0), error = function(e) NULL)
   if (is.null(sdid.c)) next
 
-  cs.c <- NA_real_
-  if (!is.null(cs.closure.raw)) {
-    keep <- cs.closure.raw$group == c &
-      cs.closure.raw$t >= c & cs.closure.raw$t <= (c + post)
-    if (any(keep)) cs.c <- mean(cs.closure.raw$att[keep], na.rm = TRUE)
-  }
+  cs.c <- tryCatch(cs_state_cohort(stack.state, c, "closures", adopt.closure, post)$att,
+                   error = function(e) NA_real_)
 
   closure_cohort <- bind_rows(closure_cohort, tibble(
     cohort           = c,

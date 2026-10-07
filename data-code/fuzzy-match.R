@@ -48,11 +48,13 @@ valid_states <- c("al", "ak", "az", "ar", "ca", "co", "ct", "de", "dc", "fl",
 
 aha.small <- aha.combine %>%
   select(ID, SYSID, critical_access, name = MNAME, state = MSTATE, city = MLOCCITY, MLOCZIP, year) %>%
-  left_join(state.zip.xwalk, by = c("MLOCZIP" = "zcta5")) %>%
   mutate(
     zip = str_pad(substr(as.character(MLOCZIP), 1, 5), width = 5, side = "left", pad = "0"),
     # Clean invalid zips (should be 5 digits, not all zeros)
-    zip = if_else(str_detect(zip, "^[0-9]{5}$") & zip != "00000", zip, NA_character_),
+    zip = if_else(str_detect(zip, "^[0-9]{5}$") & zip != "00000", zip, NA_character_)
+  ) %>%
+  left_join(state.zip.xwalk, by = c("zip" = "zcta5"), relationship = "many-to-one") %>%
+  mutate(
     # Clean invalid state codes before coalesce
     state = str_to_lower(state),
     state = if_else(state %in% valid_states, state, NA_character_),

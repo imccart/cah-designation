@@ -202,48 +202,22 @@ for (oname in names(state_outcome_map)) {
 
 
   # Callaway and Sant'Anna ------------------------------------------------
-  min.es <- -5
-  max.es <- 5
+  ## Estimated per cohort on the same balanced state panels as the SDID
+  ## estimates (cs_state_cohort in functions.R), scaled to counts per 100
+  ## hospitals by each cohort's pre-period hospital count, and pooled with the
+  ## SDID weights.
+  adopt <- state.dat %>% distinct(MSTATE, state_treat_year)
+  cs_out <- map(cohorts, function(c) {
+    r <- cs_state_cohort(stack.state, c, outcome_var, adopt, post)
+    denom_c <- denom.lag %>% filter(stack_group == c) %>% pull(mean_hosp)
+    list(att = tibble(cohort = c, att = r$att / denom_c * 100, se = r$se / denom_c * 100, Ntr = r$Ntr),
+         es  = r$es %>% mutate(estimate = estimate / denom_c * 100, se = se / denom_c * 100, Ntr = r$Ntr))
+  })
+  cs_atts <- bind_rows(map(cs_out, "att"))
+  cs_es   <- pool_event(bind_rows(map(cs_out, "es")))
 
-  ## Same denominator basis as the SDID estimates: the cohort-specific
-  ## pre-period hospital counts, weighted by treated states per cohort.
-  cs_weights <- stack.state %>%
-    filter(treated == 1, stack_group %in% cohorts) %>%
-    distinct(stack_group, MSTATE) %>%
-    count(stack_group, name = "n_tr")
-
-  denom_cs <- denom.lag %>%
-    filter(stack_group %in% cohorts) %>%
-    inner_join(cs_weights, by = "stack_group") %>%
-    summarise(d = weighted.mean(mean_hosp, n_tr)) %>%
-    pull(d)
-
-  scale_cs <- 100 / denom_cs
-
-  ## att_gt draws a multiplier bootstrap for its confidence bands. Seeding here
-  ## keeps the intervals identical regardless of what ran earlier.
-  set.seed(1234)
-
-  csa.raw <- att_gt(yname=outcome_var,
-                     gname="state_treat_year",
-                     idname="state",
-                     tname="year",
-                     control_group="notyettreated",
-                     panel=TRUE,
-                     allow_unbalanced_panel=TRUE,
-                     data = state.dat %>% filter(state_treat_year %in% c(0, cohorts)),
-                     base_period="universal",
-                     est_method="ipw",
-                     clustervars="state",
-                     bstrap=TRUE)
-  csa.att <- aggte(csa.raw, type="simple", na.rm=TRUE)
-  csa.es <- aggte(csa.raw, type="dynamic", na.rm=TRUE, min_e=-5, max_e=5)
-
-  est.cs <- tibble(
-    event_time = csa.es$egt,
-    estimate   = scale_cs*csa.es$att,
-    se         = scale_cs*csa.es$se
-  ) %>%
+  est.cs <- cs_es %>%
+    transmute(event_time = e, estimate, se) %>%
     mutate(
       conf.low  = if_else(event_time!= -1, estimate - 1.96 * se, 0),
       conf.high = if_else(event_time!= -1, estimate + 1.96 * se, 0),
@@ -269,13 +243,10 @@ for (oname in names(state_outcome_map)) {
   ggsave(paste0("results/", file_stub, "-cs.png"), plot.cs,
          width = 6.5, height = 4.25, dpi = 300, scale=1.5)
 
-  ## SDID per-period effects and the CS dynamic effects on the same axes. The
-  ## state-level CS is one call with states as units and the state's adoption
-  ## year as its group, so its comparison group is state-timing by construction.
+  ## SDID per-period effects and the CS dynamic effects on the same axes.
   series <- bind_rows(
     pool_event(bind_rows(map(out, "sdid_es"))) %>% mutate(estimator = "SDID"),
-    tibble(e = csa.es$egt, estimate = scale_cs * csa.es$att, se = scale_cs * csa.es$se,
-           estimator = "CS")
+    cs_es %>% select(e, estimate, se) %>% mutate(estimator = "CS")
   )
   ggsave(paste0("results/", file_stub, "-overlay.png"),
          overlay_plot(series, paste0(outcome_label, " per 100 hospitals")),
@@ -284,8 +255,8 @@ for (oname in names(state_outcome_map)) {
     series %>% mutate(outcome = outcome_label))
 
   # Collect results ----------------------------------------------------------
-  cs_att_val <- csa.es$overall.att * scale_cs
-  cs_se_val  <- csa.es$overall.se * scale_cs
+  cs_att_val <- with(cs_atts, sum(Ntr * att) / sum(Ntr))
+  cs_se_val  <- with(cs_atts, sqrt(sum(Ntr^2 * se^2)) / sum(Ntr))
 
   state.results.table <- bind_rows(state.results.table, tibble(
     outcome      = outcome_label,

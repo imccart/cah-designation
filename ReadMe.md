@@ -29,7 +29,6 @@ Key scripts:
 | `2-hospital-dd.R` | Hospital-level SDID/CS with state-timing controls |
 | `3-hospital-dd-alt.R` | Hospital-level SDID/CS with eligibility-restricted controls |
 | `4-changes-state-dd.R` | State-level closure/merger rates |
-| `5-changes-hospital-hazard.R` | Discrete-time hazard models |
 | `6-heterogeneity.R` | Subgroup SDID across ownership, isolation, margin, system |
 | `7-gsynth.R` | Factor-model estimation (fect/gsynth) |
 | `8-access-health.R` | Displacement analysis, net capacity, mortality calibration |

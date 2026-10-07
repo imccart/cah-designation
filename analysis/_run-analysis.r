@@ -38,7 +38,8 @@ stack.elig  <- stack_hosp_elig(pre.period=5, post.period=post, cohort.years=1999
 
 
 # Main analysis ------------------------------------------------------------
-source('analysis/2-hospital-dd.R')        # -> hosp.results.table, hosp.cohort.results
+source('analysis/1-sum-stats.R')          # -> desc_compare.tex, desc-*.png, anticipation-*.png
+source('analysis/2-hospital-dd.R')       # -> hosp.results.table, hosp.cohort.results
 source('analysis/3-hospital-dd-alt.R')     # -> elig.results, elig.cohort.results
 source('analysis/4-changes-state-dd.R')    # -> state.results.table
 
@@ -63,7 +64,9 @@ results.table <- bind_rows(hosp.results.table, state.results.table) %>%
     TRUE                                      ~ 99
   )) %>%
   arrange(.order) %>%
-  select(-.order)
+  select(-.order) %>%
+  ## the visit outcomes have their own table (Table 3)
+  filter(is.na(group) | group == "main")
 
 fmt <- function(x) {
   ax <- abs(x)
@@ -146,6 +149,7 @@ forest_dat <- bind_rows(
     transmute(outcome, controls = "State-timing",
               att = sdid_att, ci_low = sdid_ci_low, ci_high = sdid_ci_high),
   elig.results %>%
+    filter(group == "main") %>%
     transmute(outcome, controls = "Eligibility-restricted",
               att = sdid_att, ci_low = sdid_ci_low, ci_high = sdid_ci_high)
 ) %>%
@@ -201,6 +205,6 @@ source('analysis/app-control-timing.R')       # -> control-timing-*.png
 source('analysis/R1_revision.R')
 
 # Pre-trend sensitivity (Rambachan and Roth) on the SDID and CS event-time
-# effects; needs the visit-outcome series from R1_revision.R, so it runs last.
+# effects; needs the visit estimates collected in R1_revision.R, so it runs last.
 source('analysis/app-pretrend-sensitivity.R')  # -> pretrend-sens-*.png, att_pretrend.tex
 

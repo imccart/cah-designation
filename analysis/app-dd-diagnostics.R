@@ -10,7 +10,8 @@
 cohorts <- 1999:2001
 hosp_outcomes <- c("margin", "current_ratio", "net_fixed", "capex",
                    "net_pat_rev", "tot_operating_exp",
-                   "BDTOT", "OBBD", "FTERN", "ip_per_bed", "system")
+                   "BDTOT", "OBBD", "FTERN", "ip_per_bed", "system",
+                   "ed_per_bed", "op_per_bed", "opnon_per_bed", "BIRTHS")
 state_outcomes <- c("closures", "mergers")
 
 outcome_labels <- c(
@@ -19,7 +20,9 @@ outcome_labels <- c(
   net_pat_rev = "Net patient revenue per bed", tot_operating_exp = "Operating expenses per bed",
   BDTOT = "Total beds", OBBD = "OB beds", FTERN = "FTE RNs",
   ip_per_bed = "IP days per bed",
-  system = "System membership", closures = "Closures", mergers = "Mergers"
+  system = "System membership", closures = "Closures", mergers = "Mergers",
+  ed_per_bed = "ED visits per bed", op_per_bed = "Outpatient visits per bed",
+  opnon_per_bed = "Non-ED outpatient visits per bed", BIRTHS = "Births"
 )
 
 # =============================================================================
@@ -494,6 +497,7 @@ write_csv(weight_results, "results/diagnostics/diag-weight-results.csv")
 panel_a <- c("margin", "current_ratio", "net_fixed", "capex", "net_pat_rev", "tot_operating_exp")
 panel_b <- c("BDTOT", "OBBD", "FTERN", "ip_per_bed")
 panel_c <- c("system", "closures", "mergers")
+panel_d <- c("ed_per_bed", "op_per_bed", "opnon_per_bed", "BIRTHS")
 
 fmt_pct <- function(x) sprintf("%.1f\\%%", x)
 
@@ -509,7 +513,7 @@ tex_sample <- c(
   "\\multicolumn{7}{l}{\\textit{Panel A: Financial Performance}} \\\\"
 )
 
-for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
+for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_b)) {
     tex_sample <- c(tex_sample,
       "\\midrule",
@@ -519,6 +523,11 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
     tex_sample <- c(tex_sample,
       "\\midrule",
       "\\multicolumn{7}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+  }
+  if (identical(panel_outcomes, panel_d)) {
+    tex_sample <- c(tex_sample,
+      "\\midrule",
+      "\\multicolumn{7}{l}{\\textit{Panel D: Visits and Births}} \\\\")
   }
 
   for (ov in panel_outcomes) {
@@ -557,7 +566,7 @@ tex_pretrend <- c(
   "\\multicolumn{5}{l}{\\textit{Panel A: Financial Performance}} \\\\"
 )
 
-for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
+for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_b)) {
     tex_pretrend <- c(tex_pretrend,
       "\\midrule",
@@ -567,6 +576,11 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
     tex_pretrend <- c(tex_pretrend,
       "\\midrule",
       "\\multicolumn{5}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+  }
+  if (identical(panel_outcomes, panel_d)) {
+    tex_pretrend <- c(tex_pretrend,
+      "\\midrule",
+      "\\multicolumn{5}{l}{\\textit{Panel D: Visits and Births}} \\\\")
   }
 
   for (ov in panel_outcomes) {
@@ -600,7 +614,7 @@ tex_weights <- c(
   "\\multicolumn{6}{l}{\\textit{Panel A: Financial Performance}} \\\\"
 )
 
-for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
+for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_b)) {
     tex_weights <- c(tex_weights,
       "\\midrule",
@@ -610,6 +624,11 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c)) {
     tex_weights <- c(tex_weights,
       "\\midrule",
       "\\multicolumn{6}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+  }
+  if (identical(panel_outcomes, panel_d)) {
+    tex_weights <- c(tex_weights,
+      "\\midrule",
+      "\\multicolumn{6}{l}{\\textit{Panel D: Visits and Births}} \\\\")
   }
 
   for (ov in panel_outcomes) {

@@ -329,6 +329,36 @@ cs_cohort <- function(bal, cohort, min.es, max.es, seed = 1234) {
        vcov = V)
 }
 
+# cs_state_cohort(): Callaway--Sant'Anna for one state-level cohort on its SDID
+# sample, the balanced stack.state panel for cohort c (its treated states and
+# SDID's control states). Control states keep their own adoption year, so each
+# is a not-yet-treated comparison until it adopts. Only cohort c's group-time
+# effects are kept: the event-time series, and the ATT as their mean over event
+# times 0 to post, with an analytic standard error from the influence function.
+cs_state_cohort <- function(stack, cohort, outcome_var, adopt, post) {
+  bal <- stack %>%
+    filter(stack_group == cohort) %>%
+    transmute(MSTATE, year, outcome = .data[[outcome_var]], treated) %>%
+    makeBalancedPanel(idname = "MSTATE", tname = "year") %>%
+    as_tibble() %>%
+    left_join(adopt, by = "MSTATE", relationship = "many-to-one") %>%
+    mutate(g = if_else(treated == 1, cohort, coalesce(state_treat_year, 0)),
+           ID2 = as.numeric(factor(MSTATE)))
+  raw <- att_gt(yname = "outcome", gname = "g", idname = "ID2", tname = "year",
+                control_group = "notyettreated", panel = TRUE,
+                data = as.data.frame(bal), xformla = ~1,
+                base_period = "universal", est_method = "reg", bstrap = FALSE)
+  keep   <- which(raw$group == cohort)
+  e      <- raw$t[keep] - cohort
+  post_k <- which(e >= 0 & e <= post)
+  inf    <- rowMeans(as.matrix(raw$inffunc[, keep[post_k], drop = FALSE]))
+  list(att = mean(raw$att[keep][post_k]),
+       se  = sqrt(sum(inf^2)) / length(inf),
+       Ntr = n_distinct(bal$ID2[bal$treated == 1]),
+       N0  = n_distinct(bal$ID2[bal$treated == 0]),
+       es  = tibble(cohort = cohort, e = e, estimate = raw$att[keep], se = raw$se[keep]))
+}
+
 # pool_event(): pool cohort event-time series with treated-unit-count weights,
 # the weighting the pooled ATTs use, treating cohorts as independent.
 pool_event <- function(x) {

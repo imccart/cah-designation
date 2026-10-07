@@ -72,11 +72,13 @@ aha.cah.dates <- aha.combine %>%
 
 aha.final <- aha.combine %>% 
   left_join(fuzzy.unique.cah, by='ID') %>%
-  left_join(state.zip.xwalk, by=c("MLOCZIP"="zcta5")) %>%
+  mutate(zip5 = str_pad(substr(as.character(MLOCZIP), 1, 5), width = 5, side = "left", pad = "0")) %>%
+  left_join(state.zip.xwalk, by=c("zip5"="zcta5"), relationship = "many-to-one") %>%
   mutate(MSTATE=case_when(
       !is.na(MSTATE) ~ MSTATE,
       is.na(MSTATE) & !is.na(state_xwalk) ~ state_xwalk
     )) %>%
+  select(-zip5, -state_xwalk) %>%
   left_join(aha.crosswalk, by=c("ID","year")) %>%
   mutate(MCRNUM=case_when(
       !is.na(MCRNUM) ~ MCRNUM,

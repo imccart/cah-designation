@@ -14,14 +14,19 @@ hosp_outcome_map <- list(
   OBBD          = list(label="OB beds",                      stub="beds_ob",      cohorts=1999:2001),
   FTERN         = list(label="FTE RNs",                      stub="ftern",        cohorts=1999:2001),
   ip_per_bed    = list(label="Inpatient days per bed",       stub="ipdays",       cohorts=1999:2001),
-  system        = list(label="System membership",            stub="system",       cohorts=1999:2001)
+  system        = list(label="System membership",            stub="system",       cohorts=1999:2001),
+  ## AHA visits and births, reported in their own table (Table 3)
+  ed_per_bed    = list(label="ED visits per bed",                stub="edvisits-state",       cohorts=1999:2001, group="visits"),
+  op_per_bed    = list(label="Outpatient visits per bed",        stub="opvisits-state",       cohorts=1999:2001, group="visits"),
+  opnon_per_bed = list(label="Non-ED outpatient visits per bed", stub="opvisits-noned-state", cohorts=1999:2001, group="visits"),
+  BIRTHS        = list(label="Births",                           stub="births-state",         cohorts=1999:2001, group="visits")
 )
 
 # Results collectors ----------------------------------------------------------
 hosp.results.table <- tibble(
   outcome = character(), sdid_att = numeric(), sdid_ci_low = numeric(), sdid_ci_high = numeric(),
   cs_att = numeric(), cs_ci_low = numeric(), cs_ci_high = numeric(),
-  sdid_ntr = numeric()
+  sdid_ntr = numeric(), group = character(), pre_mean = numeric()
 )
 
 hosp.cohort.results <- tibble(
@@ -146,7 +151,8 @@ for (oname in names(hosp_outcome_map)) {
       att_se = tibble(cohort = c,
                       att = as.numeric(est),
                       se  = as.numeric(se_c),
-                      Ntr = Ntr),
+                      Ntr = Ntr,
+                      pre_mean = mean(Y[(N0 + 1):N, 1:setup$T0])),
       sdid_es   = ev$es,
       sdid_vcov = vcov_long(ev$vcov, c, ev$es$e),
       cs        = cs
@@ -259,7 +265,9 @@ for (oname in names(hosp_outcome_map)) {
     cs_att       = cs_att_val,
     cs_ci_low    = cs_att_val - 1.96 * cs_se_val,
     cs_ci_high   = cs_att_val + 1.96 * cs_se_val,
-    sdid_ntr     = sum(atts_all$Ntr)
+    sdid_ntr     = sum(atts_all$Ntr),
+    group        = if (is.null(o$group)) "main" else o$group,
+    pre_mean     = with(atts_all, sum(Ntr * pre_mean) / sum(Ntr))
   ))
 
   hosp.cohort.results <- bind_rows(hosp.cohort.results,

@@ -28,7 +28,6 @@ Primary estimators: Synthetic Difference-in-Differences (SDID) and Callaway-Sant
 | `2-hospital-dd.R` | Hospital | Main SDID/CS estimates, state-timing controls, cohorts 1999--2001 |
 | `3-hospital-dd-alt.R` | Hospital | Eligibility-restricted controls, cohorts 1999--2005 |
 | `4-changes-state-dd.R` | State | Closure/merger rates per 100 hospitals |
-| `5-changes-hospital-hazard.R` | Hospital | Discrete-time hazard models for closure/merger |
 | `6-heterogeneity.R` | Hospital | Subgroup SDID across 4 dimensions |
 | `7-gsynth.R` | Hospital | Factor-model estimation via fect (IFE) |
 | `8-access-health.R` | Hospital/County | Displacement, net capacity Monte Carlo, mortality calibration |

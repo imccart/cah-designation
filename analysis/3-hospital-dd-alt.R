@@ -19,14 +19,19 @@ elig_outcome_map <- list(
   OBBD          = list(label = "OB beds",                      stub = "elig-beds_ob"),
   FTERN         = list(label = "FTE RNs",                      stub = "elig-ftern"),
   ip_per_bed    = list(label = "Inpatient days per bed",       stub = "elig-ipdays"),
-  system        = list(label = "System membership",            stub = "elig-system")
+  system        = list(label = "System membership",            stub = "elig-system"),
+  ## AHA visits and births, reported in their own table (Appendix Table 6)
+  ed_per_bed    = list(label = "ED visits per bed",                stub = "edvisits-elig",       group = "visits"),
+  op_per_bed    = list(label = "Outpatient visits per bed",        stub = "opvisits-elig",       group = "visits"),
+  opnon_per_bed = list(label = "Non-ED outpatient visits per bed", stub = "opvisits-noned-elig", group = "visits"),
+  BIRTHS        = list(label = "Births",                           stub = "births-elig",         group = "visits")
 )
 
 # Results collector ----------------------------------------------------------
 elig.results <- tibble(
   outcome = character(), sdid_att = numeric(), sdid_ci_low = numeric(), sdid_ci_high = numeric(),
   cs_att = numeric(), cs_ci_low = numeric(), cs_ci_high = numeric(),
-  sdid_ntr = numeric()
+  sdid_ntr = numeric(), group = character(), pre_mean = numeric()
 )
 
 elig.cohort.results <- tibble(
@@ -113,7 +118,8 @@ for (oname in names(elig_outcome_map)) {
       paths  = tibble(cohort = c, tau = tau,
                        treated = treat_path, synthetic = syn_path, Ntr = Ntr),
       att_se = tibble(cohort = c, att = as.numeric(est),
-                       se = as.numeric(se_c), Ntr = Ntr),
+                       se = as.numeric(se_c), Ntr = Ntr,
+                       pre_mean = mean(Y[(N0 + 1):N, 1:setup$T0])),
       sdid_es   = ev$es,
       sdid_vcov = vcov_long(ev$vcov, c, ev$es$e),
       cs        = cs
@@ -230,7 +236,9 @@ for (oname in names(elig_outcome_map)) {
     cs_att       = cs_att_val,
     cs_ci_low    = cs_att_val - 1.96 * cs_se_val,
     cs_ci_high   = cs_att_val + 1.96 * cs_se_val,
-    sdid_ntr     = sum(atts_all$Ntr)
+    sdid_ntr     = sum(atts_all$Ntr),
+    group        = if (is.null(o$group)) "main" else o$group,
+    pre_mean     = with(atts_all, sum(Ntr * pre_mean) / sum(Ntr))
   ))
 
   elig.event.paths <- bind_rows(elig.event.paths,
@@ -268,6 +276,7 @@ int <- function(lo, hi) {
 }
 
 tex.lines <- elig.results %>%
+  filter(group == "main") %>%
   rowwise() %>%
   mutate(line = sprintf("%s & %s & %s & %d & %s & %s \\\\",
     outcome, fmt(sdid_att), int(sdid_ci_low, sdid_ci_high), sdid_ntr,

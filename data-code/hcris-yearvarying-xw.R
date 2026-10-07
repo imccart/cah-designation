@@ -72,7 +72,7 @@ cand.city <- match_jaccard_words(
 
 candidates <- bind_rows(cand.zip %>% select(ID = id1, MCRNUM = id2, score, strategy, zip_exact),
                         cand.city %>% select(ID = id1, MCRNUM = id2, score, strategy, zip_exact)) %>%
-  left_join(conv.variants %>% distinct(ID, eff_year), by = "ID", relationship = "many-to-many") %>%
+  left_join(conv.variants %>% distinct(ID, eff_year), by = "ID", relationship = "many-to-one") %>%
   distinct(ID, MCRNUM, score, strategy, zip_exact, eff_year) %>%
   # the earlier provider must be observed with financials in at least one pre-designation year
   left_join(hcris.years, by = "MCRNUM") %>%

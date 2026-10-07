@@ -24,13 +24,19 @@ perm_outcome_map <- list(
   OBBD              = list(label = "OB beds",                      pre_period = 5),
   FTERN             = list(label = "FTE RNs",                      pre_period = 5),
   ip_per_bed        = list(label = "Inpatient days per bed",       pre_period = 5),
-  system            = list(label = "System membership",            pre_period = 5)
+  system            = list(label = "System membership",            pre_period = 5),
+  ## AHA visits and births
+  ed_per_bed        = list(label = "ED visits per bed", pre_period = 5),
+  op_per_bed        = list(label = "Outpatient visits per bed", pre_period = 5),
+  opnon_per_bed     = list(label = "Non-ED outpatient visits per bed", pre_period = 5),
+  BIRTHS            = list(label = "Births", pre_period = 5)
 )
 
 # Results collector ------------------------------------------------------------
 perm.results <- tibble(
   outcome = character(), att_actual = numeric(), p_value = numeric()
 )
+perm.cohort.draws <- tibble()
 perm.distributions <- tibble(
   outcome = character(), att_perm = numeric()
 )
@@ -99,6 +105,10 @@ t0_total <- Sys.time()
 
 for (oname in names(perm_outcome_map)) {
   o <- perm_outcome_map[[oname]]
+  ## the visit outcomes were added after the others; the random-number state
+  ## at this point is restored before the state-level loop below, so the
+  ## closure and merger placebos are the same draws as without them
+  if (oname == "ed_per_bed") rng_before_visits <- .Random.seed
   outcome_sym   <- sym(oname)
   outcome_label <- o$label
   pp            <- if (!is.null(o$pre_period)) o$pre_period else 5
@@ -125,6 +135,7 @@ for (oname in names(perm_outcome_map)) {
       next
     }
     perm_atts[i] <- with(perm_all, sum(Ntr * att) / sum(Ntr))
+    perm.cohort.draws <- bind_rows(perm.cohort.draws, perm_all %>% mutate(outcome = outcome_label, draw = i))
   }
 
   perm_atts <- perm_atts[!is.na(perm_atts)]
@@ -139,6 +150,8 @@ for (oname in names(perm_outcome_map)) {
     outcome = outcome_label, att_perm = perm_atts
   ))
 }
+
+assign(".Random.seed", rng_before_visits, envir = globalenv())
 
 # State-level outcomes ---------------------------------------------------------
 # Units are states rather than hospitals, and estimates are scaled to counts per
@@ -197,6 +210,7 @@ for (ov in c("closures", "mergers")) {
   for (i in seq_len(n_perms)) {
     pa <- bind_rows(compact(map(perm.cohorts, ~run_state_cohort(.x, ov, TRUE))))
     perm_atts[i] <- if (nrow(pa) == 0) NA else with(pa, sum(Ntr * att) / sum(Ntr))
+    if (nrow(pa) > 0) perm.cohort.draws <- bind_rows(perm.cohort.draws, pa %>% mutate(outcome = outcome_label, draw = i))
   }
   perm_atts <- perm_atts[!is.na(perm_atts)]
   p_val <- mean(abs(perm_atts) >= abs(att_actual))
@@ -223,7 +237,7 @@ p_perm <- ggplot(perm_plot_dat, aes(x = att_perm)) +
   geom_text(data = perm.results %>%
               mutate(outcome = factor(outcome, levels = perm.results$outcome)),
             aes(x = att_actual, y = Inf, label = sprintf("p = %.3f", p_value)),
-            vjust = 1.5, hjust = -0.1, color = "red", size = 2.8) +
+            vjust = 1.5, hjust = "inward", color = "red", size = 2.8) +
   facet_wrap(~ outcome, ncol = 3, scales = "free") +
   labs(x = "Placebo ATT", y = "Count") +
   theme_bw(base_size = 10) +
@@ -237,4 +251,6 @@ ggsave("results/permutation-sdid.png", p_perm,
 
 # Save CSV ---------------------------------------------------------------------
 write_csv(perm.results, "results/diagnostics/permutation_pvalues.csv")
+write_csv(perm.distributions, "results/diagnostics/permutation_draws.csv")
+write_csv(perm.cohort.draws, "results/diagnostics/permutation_cohort_draws.csv")
 

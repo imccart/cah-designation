@@ -22,7 +22,12 @@ het_outcome_map <- list(
   OBBD              = list(label = "OB beds"),
   FTERN             = list(label = "FTE RNs"),
   ip_per_bed        = list(label = "Inpatient days per bed"),
-  system            = list(label = "System membership")
+  system            = list(label = "System membership"),
+  ## AHA visits and births
+  ed_per_bed        = list(label = "ED visits per bed"),
+  op_per_bed        = list(label = "Outpatient visits per bed"),
+  opnon_per_bed     = list(label = "Non-ED outpatient visits per bed"),
+  BIRTHS            = list(label = "Births")
 )
 
 
@@ -217,7 +222,11 @@ het_forest_labels <- c(
   "OB beds"                      = "OB beds",
   "FTE RNs"                      = "FTE RNs",
   "Inpatient days per bed"       = "IP days/bed",
-  "System membership"            = "System\nmembership"
+  "System membership"            = "System\nmembership",
+  "ED visits per bed"            = "ED visits/bed",
+  "Outpatient visits per bed"    = "OP visits/bed",
+  "Non-ED outpatient visits per bed"= "Non-ED OP/bed",
+  "Births"                       = "Births"
 )
 
 outcome_order <- names(het_forest_labels)

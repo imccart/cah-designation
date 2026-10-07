@@ -184,6 +184,20 @@ est.dat <- est.dat %>%
   mutate(ever_rural = as.integer(any(CBSATYPE == "Rural", na.rm = TRUE))) %>%
   ungroup()
 
+## Outpatient visits, ED visits, and births from the AHA survey, winsorized
+## within year and converter status as the financial outcomes are. Visits are
+## counts per pre-designation bed, as for revenue and expenses. Births stay a
+## count, since dividing births by beds would not mean anything useful.
+visits <- read_csv('data/output/aha_visits.csv', col_types = cols(ID = col_character()))
+est.dat <- est.dat %>%
+  left_join(visits, by = c("ID", "year"), relationship = "one-to-one") %>%
+  group_by(year, ever_cah) %>%
+  mutate(across(c(VEM, VTOT, VOTH, BIRTHS), winsor_by_year)) %>%
+  ungroup() %>%
+  mutate(ed_per_bed    = ifelse(beds_base > 0, VEM / beds_base, NA_real_),
+         op_per_bed    = ifelse(beds_base > 0, VTOT / beds_base, NA_real_),
+         opnon_per_bed = ifelse(beds_base > 0, VOTH / beds_base, NA_real_))
+
 ## check missing values by year
 missing.dat <- est.dat %>%
   group_by(year) %>%
@@ -222,6 +236,3 @@ state.dat <- est.dat %>%
 # Write output --------------------------------------------------------------
 write_csv(est.dat, 'data/output/estimation_data.csv')
 write_csv(state.dat, 'data/output/state_estimation_data.csv')
-
-# Summary statistics --------------------------------------------------------
-source('analysis/1-sum-stats.R')

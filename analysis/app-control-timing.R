@@ -1,6 +1,6 @@
 # app-control-timing.R
 # Sensitivity to control group timing concerns (Carroll comment)
-# Part A: Drop "immediate adopters" (eff_year == state_treat_year) from treated
+# Part A: Drop "immediate adopters" (eff_year == state_treat_year) from the sample, hospital-level outcomes
 # Part B: Vary post-period length (5, 4, 3, 2) to tighten control pool
 # Expects from _run-analysis.r: est.dat, state.dat, bed.cut, post, state.cut,
 #   financial.pre, hosp.results.table, state.results.table
@@ -18,7 +18,12 @@ ct_hosp_outcomes <- list(
   OBBD              = list(label="OB beds"),
   FTERN             = list(label="FTE RNs"),
   ip_per_bed        = list(label="Inpatient days per bed"),
-  system            = list(label="System membership")
+  system            = list(label="System membership"),
+  ## AHA visits and births
+  ed_per_bed        = list(label="ED visits per bed"),
+  op_per_bed        = list(label="Outpatient visits per bed"),
+  opnon_per_bed     = list(label="Non-ED outpatient visits per bed"),
+  BIRTHS            = list(label="Births")
 )
 
 ct_state_outcomes <- list(
@@ -123,17 +128,19 @@ n_treated_total <- est.dat %>%
   summarize(n = n_distinct(ID)) %>%
   pull(n)
 
-# Create modified est.dat excluding immediate adopters
+# Drop immediate adopters entirely, so they are neither treated nor controls
+immediate_ids <- est.dat %>%
+  filter(!is.na(eff_year), eff_year == state_treat_year) %>%
+  distinct(ID) %>%
+  pull(ID)
 est.dat.noimmed <- est.dat %>%
-  mutate(eff_year = ifelse(!is.na(eff_year) & eff_year == state_treat_year,
-                           NA_real_, eff_year))
+  filter(!ID %in% immediate_ids)
 
 # Temporarily swap est.dat for stacking (stack_hosp reads from global)
 est.dat.orig <- est.dat
 est.dat <- est.dat.noimmed
 
 sh_noimmed <- stack_hosp(pre.period = 5, post.period = post, state.period = state.cut)
-ss_noimmed <- stack_state(pre.period = 5, post.period = post, state.period = state.cut)
 
 est.dat <- est.dat.orig
 
@@ -170,32 +177,10 @@ for (oname in names(ct_hosp_outcomes)) {
     ci_high = pooled$ci_high, spec = "no_immediate"))
 }
 
-# State outcomes
-for (oname in names(ct_state_outcomes)) {
-  o <- ct_state_outcomes[[oname]]
+# State outcomes are not part of this check: state treatment is dated by the
+# state's first designation, not by which hospitals convert.
 
-
-  atts_all <- bind_rows(map(cohorts_state, function(c) {
-    tryCatch(
-      run_sdid_state_ct(c, oname, ss_noimmed),
-      error = function(e) { NULL }
-    )
-  }))
-
-  pooled <- pool_atts(atts_all)
-  if (is.null(pooled)) {
-    partA_results <- bind_rows(partA_results, tibble(
-      outcome = o$label, att = NA_real_, ci_low = NA_real_,
-      ci_high = NA_real_, spec = "no_immediate"))
-    next
-  }
-
-  partA_results <- bind_rows(partA_results, tibble(
-    outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
-    ci_high = pooled$ci_high, spec = "no_immediate"))
-}
-
-rm(sh_noimmed, ss_noimmed, est.dat.noimmed); gc()
+rm(sh_noimmed, est.dat.noimmed); gc()
 
 
 # =========================================================================
@@ -288,6 +273,10 @@ ct_forest_labels <- c(
   "FTE RNs"                      = "FTE RNs",
   "Inpatient days per bed"       = "Inpatient days\nper bed",
   "System membership"            = "System\nmembership",
+  "ED visits per bed"            = "ED visits\nper bed",
+  "Outpatient visits per bed"    = "Outpatient visits\nper bed",
+  "Non-ED outpatient visits per bed"= "Non-ED outpatient\nvisits per bed",
+  "Births"                       = "Births",
   "Closures"                     = "Closures",
   "Mergers"                      = "Mergers"
 )
@@ -301,7 +290,7 @@ label_levels <- ct_forest_labels[outcome_order]
 
 # Baseline band
 baseline_plot <- ct_baseline %>%
-  filter(!is.na(att)) %>%
+  filter(!is.na(att), outcome %in% partA_results$outcome) %>%
   mutate(outcome_label = ct_forest_labels[outcome],
          outcome_label = factor(outcome_label, levels = label_levels))
 

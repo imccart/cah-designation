@@ -25,7 +25,12 @@ gsynth_outcome_map <- list(
   OBBD              = list(label = "OB beds",                      pre_period = 5),
   FTERN             = list(label = "FTE RNs",                      pre_period = 5),
   ip_per_bed        = list(label = "Inpatient days per bed",       pre_period = 5),
-  system            = list(label = "System membership",            pre_period = 5)
+  system            = list(label = "System membership",            pre_period = 5),
+  ## AHA visits and births
+  ed_per_bed        = list(label = "ED visits per bed", pre_period = 5),
+  op_per_bed        = list(label = "Outpatient visits per bed", pre_period = 5),
+  opnon_per_bed     = list(label = "Non-ED outpatient visits per bed", pre_period = 5),
+  BIRTHS            = list(label = "Births", pre_period = 5)
 )
 
 # Results collector ------------------------------------------------------------
