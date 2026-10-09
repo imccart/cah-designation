@@ -2,7 +2,7 @@
 
 ## Author:        Ian McCarthy
 ## Date Created:  5/17/2023
-## Date Edited:   9/12/2026
+## Date Edited:   10/8/2026
 ## Description:   Run Analysis Files
 ## Note:          Run _build-estimation-data.r first to generate the CSVs
 
@@ -20,6 +20,7 @@ source('analysis/functions.R')
 # Read estimation data -----------------------------------------------------
 est.dat   <- read_csv('data/output/estimation_data.csv', col_types = cols(ID = col_character()))
 state.dat <- read_csv('data/output/state_estimation_data.csv', show_col_types = FALSE)
+state.timing <- state.dat %>% distinct(MSTATE, state_treat_year) %>% deframe()   # adoption year by state, 0 = never
 fin.vars  <- c('margin', 'current_ratio', 'net_fixed', 'capex', 'net_pat_rev', 'tot_operating_exp')
 
 
@@ -141,21 +142,24 @@ forest_labels <- c(
   "Inpatient days per bed" = "Inpatient days\nper bed",
   "Closures" = "Closures",
   "Mergers" = "Mergers",
-  "System membership" = "System\nmembership"
+  "System membership" = "System\nmembership",
+  "ED visits per bed" = "ED visits\nper bed",
+  "Outpatient visits per bed" = "Outpatient visits\nper bed",
+  "Non-ED outpatient visits per bed" = "Non-ED outpatient\nvisits per bed",
+  "Births" = "Births"
 )
 
+## every outcome in both designs; the visit rows sit after the organizational ones
 forest_dat <- bind_rows(
-  results.table %>%
+  bind_rows(results.table, hosp.results.table %>% filter(group == "visits")) %>%
     transmute(outcome, controls = "State-timing",
               att = sdid_att, ci_low = sdid_ci_low, ci_high = sdid_ci_high),
   elig.results %>%
-    filter(group == "main") %>%
     transmute(outcome, controls = "Eligibility-restricted",
               att = sdid_att, ci_low = sdid_ci_low, ci_high = sdid_ci_high)
 ) %>%
   mutate(outcome_label = forest_labels[outcome],
-         outcome_label = factor(outcome_label,
-                                levels = forest_labels[unique(results.table$outcome)]),
+         outcome_label = factor(outcome_label, levels = forest_labels),
          controls = factor(controls, levels = c("Eligibility-restricted", "State-timing")))
 
 n_out <- length(unique(forest_dat$outcome_label))
@@ -164,7 +168,7 @@ p_forest <- ggplot(forest_dat, aes(x = att, y = controls, shape = controls)) +
   geom_pointrange(aes(xmin = ci_low, xmax = ci_high),
                   size = 0.4, linewidth = 0.4) +
   scale_shape_manual(values = c("State-timing" = 16, "Eligibility-restricted" = 1)) +
-  facet_wrap(~ outcome_label, ncol = 1, scales = "free_x", strip.position = "left",
+  facet_wrap(~ outcome_label, ncol = 2, scales = "free_x", strip.position = "left",
              dir = "v") +
   labs(x = "ATT (95% CI)", y = NULL, shape = "Controls") +
   theme_bw(base_size = 11) +
@@ -180,7 +184,7 @@ p_forest <- ggplot(forest_dat, aes(x = att, y = controls, shape = controls)) +
     legend.position = "bottom"
   )
 ggsave("results/forest-sdid.png", p_forest,
-       width = 7, height = 0.9 * n_out + 1.2, dpi = 300)
+       width = 8, height = 0.9 * ceiling(n_out / 2) + 1.2, dpi = 300)
 
 
 # Heterogeneity ------------------------------------------------------------

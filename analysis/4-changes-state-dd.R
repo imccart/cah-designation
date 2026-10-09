@@ -17,6 +17,8 @@ state.results.table <- tibble(
 
 ## Event-time effects behind the SDID/CS overlay figures, per 100 hospitals.
 state.event.series <- tibble()
+state.event.cohort <- tibble()
+state.event.vcov   <- tibble()
 
 # Main loop -------------------------------------------------------------------
 for (oname in names(state_outcome_map)) {
@@ -30,109 +32,23 @@ for (oname in names(state_outcome_map)) {
 
   # Synthetic DD ---------------------------------------------------------
 
-  ## Single year
-  cohort.year <- 2000
-  denom.year <- stack.state %>%
-    filter(stacked_event_time <= -1, treated==1, stack_group==cohort.year) %>%
-    summarize(mean_hosp=mean(hospitals, na.rm=TRUE)) %>%
-    pull(mean_hosp)
-
-  synth.year <- stack.state %>%
-    filter(stack_group == cohort.year) %>%
-    transmute(ID = as.numeric(factor(MSTATE)),
-              year,
-              rate = .data[[outcome_var]],
-              post_treat)
-
-  balance.year  <- as_tibble(makeBalancedPanel(synth.year, idname="ID", tname="year"))
-
-  setup <- panel.matrices(as.data.frame(balance.year))
-  synth.est <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  se  <- synthdid_se(synth.est, method="jackknife")
-
-  w      <- attr(synth.est, "weights")$omega
-  Y      <- setup$Y
-  N0     <- setup$N0
-  N      <- nrow(Y)
-  years  <- as.numeric(colnames(Y))
-
-  treated_path   <- colMeans(Y[(N0+1):N, , drop = FALSE])
-  synthetic_path <- as.numeric(drop(t(w) %*% Y[1:N0, , drop = FALSE]))
-
-  plot_df.year <- bind_rows(
-    tibble(year = years, group="Synthetic control",
-           rate_out = (synthetic_path/denom.year)*100),
-    tibble(year = years, group="Treated",
-           rate_out = (treated_path/denom.year)*100)
-  )
-
-  att      <- (as.numeric(synth.est)/denom.year)*100
-  se_num   <- (as.numeric(se)/denom.year)*100
-  ci_low   <- att - 1.96 * se_num
-  ci_high  <- att + 1.96 * se_num
-
-  y_top <- max(plot_df.year$rate_out, na.rm = TRUE)
-  x_pos <- max(plot_df.year$year)
-
-  lab_txt <- sprintf("ATT and 95%% CI: %.2f [%.2f, %.2f]", att, ci_low, ci_high)
-
-  plot.sdid.year <- ggplot(plot_df.year, aes(x = year, y = rate_out, linetype = group)) +
-    geom_line(linewidth = 0.8, color = "black")   +
-    geom_vline(xintercept = cohort.year - 1, linewidth = 1)  +
-    scale_linetype_manual(values = c("Synthetic control" = "dashed", "Treated" = "solid")) +
-    labs(x = "Year", y = paste0(outcome_label, " per 100 hospitals"), linetype = NULL) +
-    theme_bw() +
-    theme(legend.position = "bottom", legend.key.width = unit(2, "cm"))  +
-    annotate("text", x = x_pos, y = y_top, label = lab_txt, hjust = 1, vjust = 1, size = 3.4)
-
-  ggsave(paste0("results/", file_stub, "-sdid-year.png"), plot.sdid.year,
-         width = 6.5, height = 4.25, dpi = 300, scale=1.5)
-
   ## All cohorts
   denom.lag <- stack.state %>%
     filter(stacked_event_time <= -1, treated==1) %>%
     group_by(stack_group) %>%
     summarize(mean_hosp=mean(hospitals, na.rm=TRUE))
 
+  ## Each post-designation year uses donors still untreated in that year, and
+  ## the pre-designation effects and paths come from the adoption-year fit
+  ## (sdid_state_clean in functions.R).
   run_sdid_state <- function(c){
-    dat <- stack.state %>%
-      filter(stack_group == c) %>%
-      transmute(ID = as.numeric(factor(MSTATE)),
-                year,
-                rate = .data[[outcome_var]],
-                post_treat)
-
-    bal <- as_tibble(makeBalancedPanel(dat, idname = "ID", tname = "year"))
-    setup <- panel.matrices(as.data.frame(bal))
-
-    est <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
-    se  <- synthdid_se(est, method = "jackknife")
-    ev  <- sdid_event(est, setup, c)
-
-    w       <- attr(est, "weights")$omega
-    Y       <- setup$Y
-    N0      <- setup$N0
-    N       <- nrow(Y)
-    years   <- as.numeric(colnames(Y))
-    tau     <- years - c
-
-    syn_path   <- as.numeric(drop(t(w) %*% Y[1:N0, , drop = FALSE]))
-    treat_path <- colMeans(Y[(N0 + 1):N, , drop = FALSE])
-    Ntr        <- N - N0
-
-    denom_c <- denom.lag %>% filter(stack_group == c) %>% pull(mean_hosp)
+    clean <- sdid_state_clean(state.dat, state.timing, c, outcome_var, pre = 5, post = post, lag = state.cut)
     list(
-      cohort = c,
-      paths  = tibble(cohort = c, tau = tau,
-                      treated = (treat_path/denom_c)*100,
-                      synthetic = (syn_path/denom_c)*100,
-                      Ntr = Ntr),
-      att_se = tibble(cohort = c,
-                      att = (as.numeric(est)/denom_c)*100,
-                      se  = (as.numeric(se)/denom_c)*100,
-                      Ntr = Ntr),
-      sdid_es = ev$es %>%
-        mutate(estimate = (estimate/denom_c)*100, se = (se/denom_c)*100)
+      cohort  = c,
+      paths   = clean$paths,
+      att_se  = tibble(cohort = c, att = clean$att, se = clean$se, Ntr = clean$Ntr),
+      sdid_es = clean$es,
+      sdid_vcov = vcov_long(clean$vcov, c, clean$es$e)
     )
   }
 
@@ -211,7 +127,8 @@ for (oname in names(state_outcome_map)) {
     r <- cs_state_cohort(stack.state, c, outcome_var, adopt, post)
     denom_c <- denom.lag %>% filter(stack_group == c) %>% pull(mean_hosp)
     list(att = tibble(cohort = c, att = r$att / denom_c * 100, se = r$se / denom_c * 100, Ntr = r$Ntr),
-         es  = r$es %>% mutate(estimate = estimate / denom_c * 100, se = se / denom_c * 100, Ntr = r$Ntr))
+         es  = r$es %>% mutate(estimate = estimate / denom_c * 100, se = se / denom_c * 100, Ntr = r$Ntr),
+         vcov = vcov_long(r$vcov * (100 / denom_c)^2, c, r$es$e))
   })
   cs_atts <- bind_rows(map(cs_out, "att"))
   cs_es   <- pool_event(bind_rows(map(cs_out, "es")))
@@ -253,6 +170,13 @@ for (oname in names(state_outcome_map)) {
          width = 6.5, height = 4.25, dpi = 300, scale = 1.5)
   state.event.series <- bind_rows(state.event.series,
     series %>% mutate(outcome = outcome_label))
+  ## Cohort series and covariances for the trend-adjusted estimates
+  state.event.cohort <- bind_rows(state.event.cohort,
+    bind_rows(map(out, "sdid_es")) %>% mutate(outcome = outcome_label, estimator = "SDID"),
+    bind_rows(map(cs_out, "es")) %>% mutate(outcome = outcome_label, estimator = "CS"))
+  state.event.vcov <- bind_rows(state.event.vcov,
+    bind_rows(map(out, "sdid_vcov")) %>% mutate(outcome = outcome_label, estimator = "SDID"),
+    bind_rows(map(cs_out, "vcov")) %>% mutate(outcome = outcome_label, estimator = "CS"))
 
   # Collect results ----------------------------------------------------------
   cs_att_val <- with(cs_atts, sum(Ntr * att) / sum(Ntr))
@@ -271,4 +195,6 @@ for (oname in names(state_outcome_map)) {
 }
 
 write_csv(state.event.series, "results/diagnostics/event-series-statelevel.csv")
+write_csv(state.event.cohort, "results/diagnostics/event-cohort-statelevel.csv")
+write_csv(state.event.vcov, "results/diagnostics/event-vcov-statelevel.csv")
 

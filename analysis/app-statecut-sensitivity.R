@@ -2,7 +2,7 @@
 # Robustness to varying state-level CAH adoption lags (state.cut parameter)
 # Runs SDID across state.cut = 1, 2, 3 for all hospital + state outcomes
 # Baseline (state.cut = 0) results taken from hosp.results.table and state.results.table
-# Expects from _run-analysis.r: est.dat, state.dat, bed.cut, post, financial.pre,
+# Expects from _run-analysis.r: est.dat, state.dat, state.timing, bed.cut, post, financial.pre,
 #   hosp.results.table, state.results.table
 
 
@@ -74,32 +74,12 @@ run_sdid_hosp_sc <- function(c, outcome_sym, pp, sh) {
 
 
 # SDID helper: state-level cohort ------------------------------------------
-run_sdid_state_sc <- function(c, outcome_var, ss) {
-  denom_c <- ss %>%
-    filter(stacked_event_time <= -1, treated == 1, stack_group == c) %>%
-    summarize(mean_hosp = mean(hospitals, na.rm = TRUE)) %>%
-    pull(mean_hosp)
-
-  dat <- ss %>%
-    filter(stack_group == c) %>%
-    transmute(ID = as.numeric(factor(MSTATE)),
-              year,
-              rate = .data[[outcome_var]],
-              post_treat)
-
-  bal <- as_tibble(makeBalancedPanel(dat, idname = "ID", tname = "year"))
-  setup <- panel.matrices(as.data.frame(bal))
-  Ntr   <- nrow(setup$Y) - setup$N0
-
-  if (setup$T0 < 2 || Ntr < 1) return(NULL)
-
-  est <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  se  <- synthdid_se(est, method = "jackknife")
-
-  tibble(cohort = c,
-         att = (as.numeric(est) / denom_c) * 100,
-         se  = (as.numeric(se) / denom_c) * 100,
-         Ntr = Ntr)
+# Clean-donor SDID as in 4-changes-state-dd.R, with control states required to
+# adopt more than `sc` years after the cohort.
+run_sdid_state_sc <- function(c, outcome_var, sc) {
+  fit <- sdid_state_clean(state.dat, state.timing, c, outcome_var, pre = 5, post = post, lag = sc)
+  if (is.null(fit)) return(NULL)
+  tibble(cohort = c, att = fit$att, se = fit$se, Ntr = fit$Ntr)
 }
 
 
@@ -113,7 +93,6 @@ for (sc in state_cuts) {
 
   # Rebuild stacked datasets with new state.period
   sh <- stack_hosp(pre.period = 5, post.period = post, state.period = sc)
-  ss <- stack_state(pre.period = 5, post.period = post, state.period = sc)
 
   # Hospital outcomes
   for (oname in names(sc_hosp_outcomes)) {
@@ -160,7 +139,7 @@ for (sc in state_cuts) {
 
     atts_all <- bind_rows(map(cohorts_state, function(c) {
       tryCatch(
-        run_sdid_state_sc(c, oname, ss),
+        run_sdid_state_sc(c, oname, sc),
         error = function(e) {
           message(sprintf("statecut sensitivity: cohort %d failed", c))
           NULL

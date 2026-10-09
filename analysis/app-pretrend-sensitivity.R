@@ -10,7 +10,8 @@
 # smoothness restriction in HonestDiD).
 #
 # Expects in scope: hosp.event.cohort, hosp.event.vcov (2-hospital-dd.R, visit
-# outcomes included), and results.table and visit_res (R1_revision.R) for the
+# outcomes included), state.event.cohort, state.event.vcov (4-changes-state-dd.R,
+# closures and mergers), and results.table and visit_res (R1_revision.R) for the
 # main-text estimates and intervals.
 # Writes results/pretrend-adjusted.png, results/diagnostics/pretrend-adjusted.csv,
 # results/att_pretrend.tex.
@@ -26,6 +27,8 @@ sens_outcomes <- c(
   "OB beds"                      = "beds_ob",
   "FTE RNs"                      = "ftern",
   "Inpatient days per bed"       = "ipdays",
+  "Closures"                     = "closures",
+  "Mergers"                      = "mergers",
   "System membership"            = "system",
   "ED visits per bed"            = "edvisits",
   "Outpatient visits per bed"    = "opvisits",
@@ -33,8 +36,8 @@ sens_outcomes <- c(
   "Births"                       = "births"
 )
 
-sens.cohort <- hosp.event.cohort
-sens.vcov   <- hosp.event.vcov
+sens.cohort <- bind_rows(hosp.event.cohort, state.event.cohort)
+sens.vcov   <- bind_rows(hosp.event.vcov, state.event.vcov)
 
 ## Pooled, recentered coefficients and covariance for one outcome and estimator.
 ## The e grid is the intersection across cohorts (capex 1999 starts at -2).
@@ -85,11 +88,13 @@ for (out in names(sens_outcomes)) {
     adj <- tryCatch(createSensitivityResults(p$beta, p$sigma, p$numPre, p$numPost, Mvec = 0, l_vec = l_vec),
                     error = function(err) { message(sprintf("failed for %s / %s: %s", out, estr, conditionMessage(err))); NULL })
     if (is.null(adj)) next
+    adj90 <- createSensitivityResults(p$beta, p$sigma, p$numPre, p$numPost, Mvec = 0, l_vec = l_vec, alpha = 0.10)
     ref <- table2 %>% filter(outcome == out)
     sens_rows[[length(sens_rows) + 1]] <- tibble(
       outcome = out, estimator = estr,
       main_est = ref[[paste0(estr, "_est")]], main_lb = ref[[paste0(estr, "_lb")]], main_ub = ref[[paste0(estr, "_ub")]],
-      adj_lb = as.numeric(adj$lb), adj_ub = as.numeric(adj$ub)) %>%
+      adj_lb = as.numeric(adj$lb), adj_ub = as.numeric(adj$ub),
+      adj_lb90 = as.numeric(adj90$lb), adj_ub90 = as.numeric(adj90$ub)) %>%
       mutate(adj_est = (adj_lb + adj_ub) / 2)
   }
 }
@@ -117,7 +122,7 @@ p <- ggplot(fig_dat, aes(x = estimator, y = est, shape = estimator, fill = versi
   labs(x = NULL, y = "Average effect, years 0 to 5", fill = NULL) +
   theme_bw() +
   theme(legend.position = "bottom", strip.text = element_text(size = 8))
-ggsave("results/pretrend-adjusted.png", p, width = 6.5, height = 8, dpi = 300, scale = 1.3)
+ggsave("results/pretrend-adjusted.png", p, width = 6.5, height = 9.5, dpi = 300, scale = 1.3)
 
 ## Table: the paper's interval and the trend-adjusted estimate with its
 ## interval, per outcome and estimator.

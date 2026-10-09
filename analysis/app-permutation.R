@@ -1,11 +1,11 @@
 # Meta --------------------------------------------------------------------
 ## Permutation inference for SDID estimates
 ## Provides non-parametric inference for SDID with small N_tr
-## Uses stack.hosp for the hospital-level outcomes and stack.state for
-## closures and mergers, cohorts 1999-2001
+## Uses stack.hosp for the hospital-level outcomes and the clean-donor state
+## SDID (adoption-timing permutation) for closures and mergers, cohorts 1999-2001
 ## Produces: multi-panel histogram figure + p-value CSV
 
-# Expects from _run-analysis.r: stack.hosp, stack.state, hosp.results.table, bed.cut, financial.pre
+# Expects from _run-analysis.r: stack.hosp, state.dat, state.timing, post, hosp.results.table, bed.cut, financial.pre
 
 perm.cohorts <- c(1999, 2000, 2001)
 n_perms <- 500
@@ -154,63 +154,41 @@ for (oname in names(perm_outcome_map)) {
 assign(".Random.seed", rng_before_visits, envir = globalenv())
 
 # State-level outcomes ---------------------------------------------------------
-# Units are states rather than hospitals, and estimates are scaled to counts per
-# 100 hospitals using each cohort's pre-period hospital count, as in
-# 4-changes-state-dd.R. The scale is a units conversion, so the same cohort
-# denominator is applied to the actual and permuted assignments.
+# Units are states, and the estimator is the clean-donor SDID of
+# 4-changes-state-dd.R (sdid_state_clean), whose donors in each post year are
+# states not yet treated. Treated states cannot be reassigned to the control
+# group under that design, so the placebo draws permute adoption timing: each
+# draw reshuffles adoption years among the states adopting in 1999-2002 (cohort
+# sizes kept), holds never-adopting and earlier-adopting states fixed, and reruns
+# the estimator under the reshuffled timing.
 
-state_denom <- stack.state %>%
-  filter(stacked_event_time <= -1, treated == 1) %>%
-  group_by(stack_group) %>%
-  summarize(mean_hosp = mean(hospitals, na.rm = TRUE), .groups = "drop")
-
-run_state_cohort <- function(c, outcome_var, permute) {
-  dat <- stack.state %>%
-    filter(stack_group == c) %>%
-    transmute(ID = as.numeric(factor(MSTATE)), year,
-              outcome = .data[[outcome_var]], treated, post_treat)
-
-  bal <- as_tibble(makeBalancedPanel(dat, idname = "ID", tname = "year"))
-  if (nrow(bal) == 0) return(NULL)
-
-  units <- bal %>% distinct(ID, treated)
-  n_tr <- sum(units$treated == 1)
-  n_co <- sum(units$treated == 0)
-  if (n_tr < 2 || n_co < 2) return(NULL)
-
-  if (permute) {
-    perm_treated <- sample(units$ID, n_tr)
-    bal <- bal %>%
-      mutate(post = as.integer(year >= c),
-             post_treat = as.integer(ID %in% perm_treated) * post)
-  }
-
-  setup <- tryCatch(panel.matrices(as.data.frame(bal %>% select(ID, year, outcome, post_treat))),
-                    error = function(e) NULL)
-  if (is.null(setup)) return(NULL)
-  est <- tryCatch(synthdid_estimate(setup$Y, setup$N0, setup$T0), error = function(e) NULL)
-  if (is.null(est)) return(NULL)
-
-  denom <- state_denom %>% filter(stack_group == c) %>% pull(mean_hosp)
-  tibble(cohort = c, att = (as.numeric(est) / denom) * 100, Ntr = n_tr)
+state_att <- function(timing, outcome_var) {
+  fits <- map(perm.cohorts, ~sdid_state_clean(state.dat, timing, .x, outcome_var,
+                                              pre = 5, post = post, jack = FALSE))
+  if (any(map_lgl(fits, is.null))) return(NULL)
+  tibble(cohort = perm.cohorts, att = map_dbl(fits, "att"), Ntr = map_dbl(fits, "Ntr"))
 }
+
+timing_adopters <- names(state.timing)[state.timing %in% 1999:2002]
 
 for (ov in c("closures", "mergers")) {
   outcome_label <- if (ov == "closures") "Closures" else "Mergers"
-  t0 <- Sys.time()
 
-  actual <- bind_rows(compact(map(perm.cohorts, ~run_state_cohort(.x, ov, FALSE))))
-  if (nrow(actual) == 0) {
-    message(sprintf("permutation: %s skipped, SDID failed for every cohort", ov))
+  actual <- state_att(state.timing, ov)
+  if (is.null(actual)) {
+    message(sprintf("permutation: %s skipped, SDID failed for a cohort", ov))
     next
   }
   att_actual <- with(actual, sum(Ntr * att) / sum(Ntr))
 
   perm_atts <- numeric(n_perms)
   for (i in seq_len(n_perms)) {
-    pa <- bind_rows(compact(map(perm.cohorts, ~run_state_cohort(.x, ov, TRUE))))
-    perm_atts[i] <- if (nrow(pa) == 0) NA else with(pa, sum(Ntr * att) / sum(Ntr))
-    if (nrow(pa) > 0) perm.cohort.draws <- bind_rows(perm.cohort.draws, pa %>% mutate(outcome = outcome_label, draw = i))
+    g <- state.timing
+    g[timing_adopters] <- sample(state.timing[timing_adopters])
+    pa <- state_att(g, ov)
+    perm_atts[i] <- if (is.null(pa)) NA else with(pa, sum(Ntr * att) / sum(Ntr))
+    if (!is.null(pa)) perm.cohort.draws <- bind_rows(perm.cohort.draws, pa %>% mutate(outcome = outcome_label, draw = i))
+    if (i %% 100 == 0) message(sprintf("permutation: %s draw %d of %d", ov, i, n_perms))
   }
   perm_atts <- perm_atts[!is.na(perm_atts)]
   p_val <- mean(abs(perm_atts) >= abs(att_actual))

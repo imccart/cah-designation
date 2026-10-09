@@ -73,32 +73,13 @@ run_sdid_hosp_ct <- function(c, outcome_sym, pp, sh) {
 
 
 # SDID helper: state-level cohort ------------------------------------------
-run_sdid_state_ct <- function(c, outcome_var, ss) {
-  denom_c <- ss %>%
-    filter(stacked_event_time <= -1, treated == 1, stack_group == c) %>%
-    summarize(mean_hosp = mean(hospitals, na.rm = TRUE)) %>%
-    pull(mean_hosp)
-
-  dat <- ss %>%
-    filter(stack_group == c) %>%
-    transmute(ID = as.numeric(factor(MSTATE)),
-              year,
-              rate = .data[[outcome_var]],
-              post_treat)
-
-  bal <- as_tibble(makeBalancedPanel(dat, idname = "ID", tname = "year"))
-  setup <- panel.matrices(as.data.frame(bal))
-  Ntr   <- nrow(setup$Y) - setup$N0
-
-  if (setup$T0 < 2 || Ntr < 1) return(NULL)
-
-  est <- synthdid_estimate(setup$Y, setup$N0, setup$T0)
-  se  <- synthdid_se(est, method = "jackknife")
-
-  tibble(cohort = c,
-         att = (as.numeric(est) / denom_c) * 100,
-         se  = (as.numeric(se) / denom_c) * 100,
-         Ntr = Ntr)
+# Clean-donor SDID as in 4-changes-state-dd.R; `timing` is the adoption-year
+# vector (Part C drops the never-adopting states from it) and `pp_post` the
+# post-period length. NULL when a post year has fewer than two donors.
+run_sdid_state_ct <- function(c, outcome_var, timing, pp_post) {
+  fit <- sdid_state_clean(state.dat, timing, c, outcome_var, pre = 5, post = pp_post, lag = state.cut)
+  if (is.null(fit)) return(NULL)
+  tibble(cohort = c, att = fit$att, se = fit$se, Ntr = fit$Ntr)
 }
 
 
@@ -199,7 +180,6 @@ partB_results <- tibble(
 for (pp_post in post_periods) {
 
   sh <- stack_hosp(pre.period = 5, post.period = pp_post, state.period = state.cut)
-  ss <- stack_state(pre.period = 5, post.period = pp_post, state.period = state.cut)
 
   # Hospital outcomes
   for (oname in names(ct_hosp_outcomes)) {
@@ -235,7 +215,7 @@ for (pp_post in post_periods) {
 
     atts_all <- bind_rows(map(cohorts_state, function(c) {
       tryCatch(
-        run_sdid_state_ct(c, oname, ss),
+        run_sdid_state_ct(c, oname, state.timing, pp_post),
         error = function(e) { NULL }
       )
     }))
@@ -253,7 +233,7 @@ for (pp_post in post_periods) {
       ci_high = pooled$ci_high, post_period = as.integer(pp_post)))
   }
 
-  rm(sh, ss); gc()
+  rm(sh); gc()
 }
 
 
@@ -424,7 +404,6 @@ est.dat.orig <- est.dat
 est.dat <- est.dat.noNever
 
 sh_noNever <- stack_hosp(pre.period = 5, post.period = post, state.period = state.cut)
-ss_noNever <- stack_state(pre.period = 5, post.period = post, state.period = state.cut)
 
 est.dat <- est.dat.orig
 
@@ -461,32 +440,10 @@ for (oname in names(ct_hosp_outcomes)) {
     ci_high = pooled$ci_high, spec = "no_never_states"))
 }
 
-# State outcomes
-for (oname in names(ct_state_outcomes)) {
-  o <- ct_state_outcomes[[oname]]
+# State outcomes are not part of this check: without the never-adopting states,
+# no state is still untreated after 2002 to serve as a donor.
 
-
-  atts_all <- bind_rows(map(cohorts_state, function(c) {
-    tryCatch(
-      run_sdid_state_ct(c, oname, ss_noNever),
-      error = function(e) { NULL }
-    )
-  }))
-
-  pooled <- pool_atts(atts_all)
-  if (is.null(pooled)) {
-    partC_results <- bind_rows(partC_results, tibble(
-      outcome = o$label, att = NA_real_, ci_low = NA_real_,
-      ci_high = NA_real_, spec = "no_never_states"))
-    next
-  }
-
-  partC_results <- bind_rows(partC_results, tibble(
-    outcome = o$label, att = pooled$att, ci_low = pooled$ci_low,
-    ci_high = pooled$ci_high, spec = "no_never_states"))
-}
-
-rm(sh_noNever, ss_noNever, est.dat.noNever, state.dat.noNever); gc()
+rm(sh_noNever, est.dat.noNever, state.dat.noNever); gc()
 
 
 # =========================================================================

@@ -16,10 +16,10 @@ state_outcomes <- c("closures", "mergers")
 
 outcome_labels <- c(
   margin = "Operating margin", current_ratio = "Current ratio",
-  net_fixed = "Net fixed assets", capex = "Capital expenditures",
+  net_fixed = "Net fixed assets", capex = "Capital expenditures per bed",
   net_pat_rev = "Net patient revenue per bed", tot_operating_exp = "Operating expenses per bed",
   BDTOT = "Total beds", OBBD = "OB beds", FTERN = "FTE RNs",
-  ip_per_bed = "IP days per bed",
+  ip_per_bed = "Inpatient days per bed",
   system = "System membership", closures = "Closures", mergers = "Mergers",
   ed_per_bed = "ED visits per bed", op_per_bed = "Outpatient visits per bed",
   opnon_per_bed = "Non-ED outpatient visits per bed", BIRTHS = "Births"
@@ -435,47 +435,21 @@ for (outcome_var in hosp_outcomes) {
 for (outcome_var in state_outcomes) {
 
   for (c in cohorts) {
-    synth.c <- stack.state %>%
-      filter(stack_group == c) %>%
-      transmute(ID = as.numeric(factor(MSTATE)),
-                year,
-                outcome = .data[[outcome_var]],
-                treated = post_treat)
-
-    bal.c <- tryCatch({
-      as_tibble(makeBalancedPanel(synth.c, idname = "ID", tname = "year"))
-    }, error = function(e) NULL)
-
-    if (!is.null(bal.c) && nrow(bal.c) > 0) {
-      setup <- tryCatch({
-        panel.matrices(as.data.frame(bal.c))
-      }, error = function(e) NULL)
-
-      if (!is.null(setup) && setup$N0 > 0 && setup$T0 > 0) {
-        est <- tryCatch({
-          synthdid_estimate(setup$Y, setup$N0, setup$T0)
-        }, error = function(e) NULL)
-
-        if (!is.null(est)) {
-          w <- attr(est, "weights")$omega
-
-          n_controls <- length(w)
-          n_nonzero <- sum(w > 0.001)
-          max_w <- max(w)
-          top5_share <- sum(sort(w, decreasing = TRUE)[1:min(5, length(w))])
-          hhi <- sum(w^2)
-
-          weight_results <- bind_rows(weight_results, tibble(
-            outcome = outcome_var,
-            cohort = c,
-            n_controls = n_controls,
-            n_nonzero_weights = n_nonzero,
-            max_weight = round(max_w, 3),
-            top5_weight_share = round(top5_share, 3),
-            herfindahl = round(hhi, 4)
-          ))
-        }
-      }
+    # Clean-donor SDID fits one set of weights per post year; the table reports
+    # the adoption-year fit, whose donors are every state not yet treated in
+    # the cohort year.
+    fit <- sdid_state_clean(state.dat, state.timing, c, outcome_var, pre = 5, post = post, jack = FALSE, lag = state.cut)
+    if (!is.null(fit)) {
+      w <- fit$weights[[1]]
+      weight_results <- bind_rows(weight_results, tibble(
+        outcome = outcome_var,
+        cohort = c,
+        n_controls = as.integer(fit$donors[1]),
+        n_nonzero_weights = sum(w > 0.001),
+        max_weight = round(max(w), 3),
+        top5_weight_share = round(sum(sort(w, decreasing = TRUE)[1:min(5, length(w))]), 3),
+        herfindahl = round(sum(w^2), 4)
+      ))
     }
   }
 }

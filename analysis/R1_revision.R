@@ -121,8 +121,8 @@ write_tabular <- function(lines, header, path, align) {
 ## ===== E4 / R1.2 — Outpatient, ED visits, births ==============================
 ## The visit outcomes are estimated with the other outcomes in 2-hospital-dd.R
 ## (state-timing) and 3-hospital-dd-alt.R (eligibility-restricted). This chunk
-## collects their rows into results/att_visits.tex and
-## results/att_visits_elig.tex and writes the visit series used elsewhere.
+## collects their rows into the last panel of results/att_overall_perm.tex and
+## into results/att_visits_elig.tex, and writes the visit series used elsewhere.
 ## pre_mean is the treated pre-period mean, the base for the percent effects
 ## quoted in the abstract and Section 4.4.
 visit_labels <- c("ED visits per bed", "Outpatient visits per bed",
@@ -154,7 +154,8 @@ visit_line <- function(d) {
 visit_header <- c(" & \\multicolumn{2}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
                   "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}",
                   "Outcome & ATT & 95\\% CI & ATT & 95\\% CI & $N_{tr}$ \\\\")
-## Table 3 carries the permutation p-values next to the jackknife intervals, as Table 2 does
+## The state-timing visit rows, with permutation p-values, form the last panel of
+## Table 2 (written in the R1-minor(a) chunk below)
 visit_perm <- read_csv("results/diagnostics/permutation_pvalues.csv", show_col_types = FALSE) %>%
   select(outcome, p_value)
 visit_perm_lines <- visit_res %>%
@@ -168,11 +169,6 @@ visit_perm_lines <- visit_res %>%
                         ifelse(is.na(cs_att), "", ci3(cs_lo, cs_hi)),
                         sdid_ntr)) %>%
   pull(line)
-write_tabular(visit_perm_lines,
-              c(" & \\multicolumn{3}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
-                "\\cmidrule(lr){2-4} \\cmidrule(lr){5-6}",
-                "Outcome & ATT & 95\\% CI & Permutation $p$ & ATT & 95\\% CI & $N_{tr}$ \\\\"),
-              "results/att_visits.tex", "lcccccr")
 write_tabular(visit_line(visit_res %>% filter(design == "elig")),
               visit_header, "results/att_visits_elig.tex", "lccccr")
 
@@ -181,11 +177,18 @@ write_tabular(visit_line(visit_res %>% filter(design == "elig")),
 ## The appendix anticipation analysis (treatment dated one year before
 ## designation) on the main state-timing design, for the main-text table.
 ## Writes results/att_antic_state.tex (+ CSV).
-antic_map <- c(BDTOT = "Total beds", OBBD = "OB beds", FTERN = "FTE RNs", ip_per_bed = "Inpatient days per bed", system = "System membership")
+antic_map <- c(margin = "Operating margin", current_ratio = "Current ratio", net_fixed = "Net fixed assets",
+               capex = "Capital expenditures per bed", net_pat_rev = "Net patient revenue per bed",
+               tot_operating_exp = "Operating expenses per bed",
+               BDTOT = "Total beds", OBBD = "OB beds", FTERN = "FTE RNs", ip_per_bed = "Inpatient days per bed",
+               system = "System membership",
+               ed_per_bed = "ED visits per bed", op_per_bed = "Outpatient visits per bed",
+               opnon_per_bed = "Non-ED outpatient visits per bed", BIRTHS = "Births")
 antic_rows <- list()
 for (oname in names(antic_map)) {
-  b <- rr_sdid(oname, stack.hosp, 1999:2001, pre = 5, shift = FALSE)
-  a <- rr_sdid(oname, stack.hosp, 1999:2001, pre = 5, shift = TRUE)
+  pp <- if (oname %in% fin.vars) financial.pre else 5
+  b <- rr_sdid(oname, stack.hosp, 1999:2001, pre = pp, shift = FALSE)
+  a <- rr_sdid(oname, stack.hosp, 1999:2001, pre = pp, shift = TRUE)
   if (!is.null(b) && !is.null(a)) antic_rows[[length(antic_rows) + 1]] <- tibble(outcome = antic_map[[oname]], base_att = b$att, base_lo = b$lo, base_hi = b$hi,
                                                                                 antic_att = a$att, antic_lo = a$lo, antic_hi = a$hi, ntr = b$ntr)
 }
@@ -197,6 +200,8 @@ antic_lines <- antic_state %>%
                         fmt3(base_att), ci3(base_lo, base_hi),
                         fmt3(antic_att), ci3(antic_lo, antic_hi))) %>%
   pull(line)
+antic_lines <- append(antic_lines, "\\addlinespace", after = 6)
+antic_lines <- append(antic_lines, "\\addlinespace", after = 12)
 
 antic_header <- c(
   " & \\multicolumn{2}{c}{Treatment at designation} & \\multicolumn{2}{c}{Treatment one year earlier} \\\\",
@@ -511,6 +516,7 @@ if (file.exists(perm_file)) {
                           ifelse(is.na(cs_att), "", ci3(cs_ci_low, cs_ci_high)),
                           sdid_ntr)) %>% pull(line)
   lines <- append(lines, "\\addlinespace", after = 6); lines <- append(lines, "\\addlinespace", after = 11)
+  lines <- c(lines, "\\addlinespace", visit_perm_lines)
   write_tabular(lines,
                 c(" & \\multicolumn{3}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
                   "\\cmidrule(lr){2-4} \\cmidrule(lr){5-6}",
@@ -531,26 +537,18 @@ if (exists("het.results")) {
 
 
 ## ===== E5 — Closure ATT by cohort, SDID against Callaway--Sant'Anna ==========
-## Cohort-level closure ATTs behind the closure footnote. Both estimators use
-## each cohort's balanced SDID state panel: SDID as in 4-changes-state-dd.R and
-## CS through cs_state_cohort() in functions.R, averaged over the cohort's five
-## post-treatment years. Values are per state-year, before the per-100-hospital
-## scaling.
+## Cohort-level closure ATTs behind the closure footnote. SDID is the
+## clean-donor estimator of 4-changes-state-dd.R (sdid_state_clean), and CS runs
+## through cs_state_cohort() on the cohort's balanced state panel, averaged over
+## the cohort's five post-treatment years. Values are per state-year, before the
+## per-100-hospital scaling. n_control_states is the donor pool in the adoption
+## year and n_donors_final the pool in the last post year.
 
 adopt.closure <- state.dat %>% distinct(MSTATE, state_treat_year)
 
 closure_cohort <- tibble()
 for (c in 1999:2001) {
-  synth.c <- stack.state %>%
-    filter(stack_group == c) %>%
-    transmute(ID = as.numeric(factor(MSTATE)), year, outcome = closures, treated = post_treat)
-
-  bal.c <- tryCatch(as_tibble(makeBalancedPanel(synth.c, idname = "ID", tname = "year")),
-                    error = function(e) NULL)
-  if (is.null(bal.c) || nrow(bal.c) == 0) next
-  setup.c <- tryCatch(panel.matrices(as.data.frame(bal.c)), error = function(e) NULL)
-  if (is.null(setup.c)) next
-  sdid.c <- tryCatch(synthdid_estimate(setup.c$Y, setup.c$N0, setup.c$T0), error = function(e) NULL)
+  sdid.c <- sdid_state_clean(state.dat, state.timing, c, "closures", pre = 5, post = post, lag = state.cut)
   if (is.null(sdid.c)) next
 
   cs.c <- tryCatch(cs_state_cohort(stack.state, c, "closures", adopt.closure, post)$att,
@@ -558,11 +556,11 @@ for (c in 1999:2001) {
 
   closure_cohort <- bind_rows(closure_cohort, tibble(
     cohort           = c,
-    n_treated_states = nrow(setup.c$Y) - setup.c$N0,
-    n_control_states = setup.c$N0,
-    sdid_att         = as.numeric(sdid.c),
-    sdid_se          = tryCatch(as.numeric(synthdid_se(sdid.c, method = "jackknife")),
-                                error = function(e) NA_real_),
+    n_treated_states = sdid.c$Ntr,
+    n_control_states = as.integer(sdid.c$donors[1]),
+    n_donors_final   = as.integer(sdid.c$donors[length(sdid.c$donors)]),
+    sdid_att         = sdid.c$att / sdid.c$scale,
+    sdid_se          = sdid.c$se / sdid.c$scale,
     cs_att           = cs.c))
 }
 

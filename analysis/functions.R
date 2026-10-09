@@ -352,11 +352,104 @@ cs_state_cohort <- function(stack, cohort, outcome_var, adopt, post) {
   e      <- raw$t[keep] - cohort
   post_k <- which(e >= 0 & e <= post)
   inf    <- rowMeans(as.matrix(raw$inffunc[, keep[post_k], drop = FALSE]))
+  inf_all <- as.matrix(raw$inffunc[, keep, drop = FALSE])
   list(att = mean(raw$att[keep][post_k]),
        se  = sqrt(sum(inf^2)) / length(inf),
        Ntr = n_distinct(bal$ID2[bal$treated == 1]),
        N0  = n_distinct(bal$ID2[bal$treated == 0]),
-       es  = tibble(cohort = cohort, e = e, estimate = raw$att[keep], se = raw$se[keep]))
+       es  = tibble(cohort = cohort, e = e, estimate = raw$att[keep], se = raw$se[keep]),
+       vcov = t(inf_all) %*% inf_all / nrow(inf_all)^2)
+}
+
+# sdid_state_clean(): state-level SDID for one cohort with donors restricted to
+# states still untreated in each post year. The cohort's panel is its treated
+# states (adoption year equal to the cohort) and the states adopting later or
+# never, over the pre and post window, balanced. For each post year t, SDID is
+# fit on the pre years plus year t, using as donors the states whose program
+# starts after t or never. The cohort ATT is the mean of these yearly effects,
+# and `scale` converts counts to per 100 hospitals using the treated states'
+# pre-period hospital count. The pre-period event-time effects come from the
+# adoption-year fit (t = cohort), whose donors are all untreated in that year.
+# Standard errors and the covariance across event times are a fixed-weight
+# jackknife over all the fits at once (each fit's weights re-averaged when a
+# state is left out, as in synthdid_se). `timing` is each state's
+# adoption year (0 = never), named by state; placebo draws pass a reshuffled
+# version. `lag` requires control states to adopt more than `lag` years after the
+# cohort (the state-lag sensitivity). Returns NULL when a year has fewer than two
+# donors.
+sdid_state_clean <- function(sdat, timing, cohort, outcome_var, pre, post, jack = TRUE, lag = 0) {
+  st <- names(timing)[timing == cohort | timing == 0 | timing > cohort + lag]
+  d <- sdat %>% filter(MSTATE %in% st, year >= cohort - pre, year <= cohort + post)
+  Yw <- d %>% select(MSTATE, year, v = all_of(outcome_var)) %>%
+    pivot_wider(names_from = year, values_from = v) %>% arrange(MSTATE)
+  Yw <- Yw[complete.cases(Yw), ]
+  Y <- as.matrix(Yw[, -1]); years <- as.numeric(colnames(Yw)[-1]); g <- timing[Yw$MSTATE]
+  tr <- which(g == cohort); pre_c <- which(years < cohort)
+  if (length(tr) < 1) return(NULL)
+  scale <- 100 / (d %>% filter(MSTATE %in% Yw$MSTATE[tr], year < cohort) %>% summarize(m = mean(hospitals)) %>% pull(m))
+  ts <- cohort:(cohort + post)
+  # leave-one-state-out replicate of a fit's effects, weights held fixed and
+  # omega renormalized over the remaining donors (NA where undefined)
+  jack_fit <- function(f, trs, dns, om) {
+    sapply(seq_len(nrow(Y)), function(i) {
+      if (i %in% trs) {
+        if (length(trs) < 2) return(rep(NA_real_, length(f(trs, dns, om))))
+        f(setdiff(trs, i), dns, om)
+      } else if (i %in% dns) {
+        k <- which(dns == i); o <- om[-k]
+        if (sum(o) <= 0) return(rep(NA_real_, length(f(trs, dns, om))))
+        f(trs, dns[-k], o / sum(o))
+      } else f(trs, dns, om)
+    })
+  }
+  fits <- lapply(ts, function(t) {
+    tc <- which(years == t)
+    dn <- which(g == 0 | (g > t & g > cohort + lag))
+    if (length(dn) < 2) return(NULL)
+    cols <- c(pre_c, tc)
+    est <- tryCatch(synthdid_estimate(rbind(Y[dn, cols, drop = FALSE], Y[tr, cols, drop = FALSE]), length(dn), length(pre_c)),
+                    error = function(e) NULL)
+    if (is.null(est)) return(NULL)
+    w <- attr(est, "weights")
+    gaps <- function(trs, dns, om) {
+      gap <- colMeans(Y[trs, cols, drop = FALSE]) - as.numeric(t(om) %*% Y[dns, cols, drop = FALSE])
+      gap - sum(w$lambda * gap[seq_along(pre_c)])
+    }
+    tau_fixed <- function(trs, dns, om) { x <- gaps(trs, dns, om); x[length(x)] }
+    pre_fixed <- function(trs, dns, om) gaps(trs, dns, om)[seq_along(pre_c)]
+    list(att = as.numeric(est), donors = length(dn), weights = w$omega,
+         synthetic = sum(w$omega * Y[dn, tc]),
+         jk = if (jack) jack_fit(tau_fixed, tr, dn, w$omega) else NULL,
+         # the adoption-year fit (t = cohort) also supplies the pre-period effects
+         pre = if (t == cohort) pre_fixed(tr, dn, w$omega) else NULL,
+         pre_jk = if (t == cohort && jack) matrix(jack_fit(pre_fixed, tr, dn, w$omega), nrow = length(pre_c)) else NULL,
+         pre_synthetic = if (t == cohort) as.numeric(t(w$omega) %*% Y[dn, pre_c, drop = FALSE]) else NULL)
+  })
+  if (any(vapply(fits, is.null, TRUE))) return(NULL)
+  tau <- vapply(fits, `[[`, 0, "att")
+  e_pre <- years[pre_c] - cohort
+  out <- list(att = mean(tau) * scale, Ntr = length(tr), scale = scale,
+              donors = vapply(fits, `[[`, 0, "donors"),
+              weights = lapply(fits, `[[`, "weights"),
+              paths = tibble(cohort = cohort, tau = c(e_pre, ts - cohort),
+                             treated = colMeans(Y[tr, c(pre_c, match(ts, years)), drop = FALSE]) * scale,
+                             synthetic = c(fits[[1]]$pre_synthetic, vapply(fits, `[[`, 0, "synthetic")) * scale,
+                             Ntr = length(tr)))
+  if (jack) {
+    J <- sapply(fits, `[[`, "jk")                      # states x post years
+    R <- rbind(fits[[1]]$pre_jk, t(J)) * scale          # event times x states
+    keep <- colSums(is.na(R)) == 0
+    n <- sum(keep)
+    dev <- R[, keep, drop = FALSE] - rowMeans(R[, keep, drop = FALSE])
+    V <- (n - 1) / n * dev %*% t(dev)
+    np <- length(pre_c)
+    out$se <- sqrt(sum(V[-(1:np), -(1:np)]) / length(ts)^2)
+    out$jk_dropped <- sum(!keep)
+    out$es <- tibble(cohort = cohort, e = c(e_pre, ts - cohort),
+                     estimate = c(fits[[1]]$pre, tau) * scale, se = sqrt(diag(V)), Ntr = length(tr))
+    out$vcov <- V
+  }
+  out
 }
 
 # pool_event(): pool cohort event-time series with treated-unit-count weights,
