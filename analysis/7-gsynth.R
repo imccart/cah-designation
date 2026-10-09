@@ -146,16 +146,14 @@ int <- function(lo, hi) {
   sprintf("[%s, %s]", formatC(lo, format="f", digits=d), formatC(hi, format="f", digits=d))
 }
 
+gsynth.results <- gsynth.results %>% arrange(match(outcome, outcome.order))
 tex_lines <- gsynth.results %>%
   rowwise() %>%
   mutate(line = sprintf("%s & %s & %s & %d \\\\",
     outcome, fmt(att), int(ci_low, ci_high), ntr)) %>%
   ungroup() %>%
   pull(line)
-
-# Insert group separators: financial (1-6), capacity (7-10), organizational (11)
-tex_lines <- append(tex_lines, "\\addlinespace", after = 6)
-tex_lines <- append(tex_lines, "\\addlinespace", after = 11)  # shifted by 1
+tex_lines <- with_group_breaks(tex_lines, gsynth.results$outcome)
 
 writeLines(c(
   "\\begin{tabular}{lccr}",

@@ -275,8 +275,10 @@ int <- function(lo, hi) {
   sprintf("[%s, %s]", formatC(lo, format="f", digits=d), formatC(hi, format="f", digits=d))
 }
 
+elig.results        <- elig.results %>% arrange(match(outcome, outcome.order))
+elig.cohort.results <- elig.cohort.results %>% arrange(match(outcome, outcome.order))
+
 tex.lines <- elig.results %>%
-  filter(group == "main") %>%
   rowwise() %>%
   mutate(line = sprintf("%s & %s & %s & %d & %s & %s \\\\",
     outcome, fmt(sdid_att), int(sdid_ci_low, sdid_ci_high), sdid_ntr,
@@ -285,9 +287,7 @@ tex.lines <- elig.results %>%
   pull(line)
 
 ## Complete tabular block (LaTeX 2025 breaks \noalign/\omit inside \input within tabular)
-# Insert group separators: financial (1-6), capacity (7-10), organizational (11)
-tex.lines <- append(tex.lines, "\\addlinespace", after = 6)
-tex.lines <- append(tex.lines, "\\addlinespace", after = 11)  # shifted by 1
+tex.lines <- with_group_breaks(tex.lines, elig.results$outcome)
 
 writeLines(c(
   "\\begin{tabular}{lccrcc}",

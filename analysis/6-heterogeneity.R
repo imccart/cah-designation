@@ -222,11 +222,11 @@ het_forest_labels <- c(
   "OB beds"                      = "OB beds",
   "FTE RNs"                      = "FTE RNs",
   "Inpatient days per bed"       = "IP days/bed",
-  "System membership"            = "System\nmembership",
   "ED visits per bed"            = "ED visits/bed",
   "Outpatient visits per bed"    = "OP visits/bed",
   "Non-ED outpatient visits per bed"= "Non-ED OP/bed",
-  "Births"                       = "Births"
+  "Births"                       = "Births",
+  "System membership"            = "System\nmembership"
 )
 
 outcome_order <- names(het_forest_labels)
@@ -285,6 +285,7 @@ for (dim_name in unique(het.results$dimension)) {
   grps <- unique(dim_dat$subgroup)
 
   wide <- dim_dat %>%
+    arrange(match(outcome, outcome.order)) %>%
     select(subgroup, outcome, att, ci_low, ci_high, ntr) %>%
     pivot_wider(
       names_from = subgroup,

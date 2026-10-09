@@ -15,7 +15,7 @@ hosp_outcome_map <- list(
   FTERN         = list(label="FTE RNs",                      stub="ftern",        cohorts=1999:2001),
   ip_per_bed    = list(label="Inpatient days per bed",       stub="ipdays",       cohorts=1999:2001),
   system        = list(label="System membership",            stub="system",       cohorts=1999:2001),
-  ## AHA visits and births, reported in their own table (Table 3)
+  ## AHA visits and births
   ed_per_bed    = list(label="ED visits per bed",                stub="edvisits-state",       cohorts=1999:2001, group="visits"),
   op_per_bed    = list(label="Outpatient visits per bed",        stub="opvisits-state",       cohorts=1999:2001, group="visits"),
   opnon_per_bed = list(label="Non-ED outpatient visits per bed", stub="opvisits-noned-state", cohorts=1999:2001, group="visits"),
@@ -288,6 +288,9 @@ for (oname in names(hosp_outcome_map)) {
     bind_rows(map(cs_list, function(x) vcov_long(x$vcov, x$es$cohort[1], x$es$e))) %>%
       mutate(outcome = outcome_label, estimator = "CS"))
 }
+
+hosp.results.table  <- hosp.results.table %>% arrange(match(outcome, outcome.order))
+hosp.cohort.results <- hosp.cohort.results %>% arrange(match(outcome, outcome.order))
 
 write_csv(hosp.event.paths, "results/diagnostics/sdid-event-paths.csv")
 write_csv(hosp.event.series, "results/diagnostics/event-series-state.csv")

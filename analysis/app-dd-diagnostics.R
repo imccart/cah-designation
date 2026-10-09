@@ -470,8 +470,8 @@ write_csv(weight_results, "results/diagnostics/diag-weight-results.csv")
 # Panel structure matching paper: A = Financial, B = Capacity, C = Organizational
 panel_a <- c("margin", "current_ratio", "net_fixed", "capex", "net_pat_rev", "tot_operating_exp")
 panel_b <- c("BDTOT", "OBBD", "FTERN", "ip_per_bed")
-panel_c <- c("system", "closures", "mergers")
-panel_d <- c("ed_per_bed", "op_per_bed", "opnon_per_bed", "BIRTHS")
+panel_c <- c("ed_per_bed", "op_per_bed", "opnon_per_bed", "BIRTHS")
+panel_d <- c("closures", "mergers", "system")
 
 fmt_pct <- function(x) sprintf("%.1f\\%%", x)
 
@@ -496,12 +496,12 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_c)) {
     tex_sample <- c(tex_sample,
       "\\midrule",
-      "\\multicolumn{7}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+      "\\multicolumn{7}{l}{\\textit{Panel C: Visits and Births}} \\\\")
   }
   if (identical(panel_outcomes, panel_d)) {
     tex_sample <- c(tex_sample,
       "\\midrule",
-      "\\multicolumn{7}{l}{\\textit{Panel D: Visits and Births}} \\\\")
+      "\\multicolumn{7}{l}{\\textit{Panel D: Organizational Changes}} \\\\")
   }
 
   for (ov in panel_outcomes) {
@@ -549,12 +549,12 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_c)) {
     tex_pretrend <- c(tex_pretrend,
       "\\midrule",
-      "\\multicolumn{5}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+      "\\multicolumn{5}{l}{\\textit{Panel C: Visits and Births}} \\\\")
   }
   if (identical(panel_outcomes, panel_d)) {
     tex_pretrend <- c(tex_pretrend,
       "\\midrule",
-      "\\multicolumn{5}{l}{\\textit{Panel D: Visits and Births}} \\\\")
+      "\\multicolumn{5}{l}{\\textit{Panel D: Organizational Changes}} \\\\")
   }
 
   for (ov in panel_outcomes) {
@@ -597,12 +597,12 @@ for (panel_outcomes in list(panel_a, panel_b, panel_c, panel_d)) {
   if (identical(panel_outcomes, panel_c)) {
     tex_weights <- c(tex_weights,
       "\\midrule",
-      "\\multicolumn{6}{l}{\\textit{Panel C: Organizational Changes}} \\\\")
+      "\\multicolumn{6}{l}{\\textit{Panel C: Visits and Births}} \\\\")
   }
   if (identical(panel_outcomes, panel_d)) {
     tex_weights <- c(tex_weights,
       "\\midrule",
-      "\\multicolumn{6}{l}{\\textit{Panel D: Visits and Births}} \\\\")
+      "\\multicolumn{6}{l}{\\textit{Panel D: Organizational Changes}} \\\\")
   }
 
   for (ov in panel_outcomes) {

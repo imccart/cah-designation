@@ -488,3 +488,17 @@ overlay_plot <- function(series, ylab) {
     theme(legend.position = "inside", legend.position.inside = c(0.14, 0.14),
           legend.background = element_blank())
 }
+
+
+## Table lines with \addlinespace between outcome groups (financial, capacity
+## and staffing, visits and births, organizational). outcomes are the row
+## labels in the order of lines, each a member of outcome.order.
+with_group_breaks <- function(lines, outcomes) {
+  grp <- findInterval(match(outcomes, outcome.order), c(1, 7, 11, 15))
+  out <- character()
+  for (i in seq_along(lines)) {
+    if (i > 1 && grp[i] != grp[i - 1]) out <- c(out, "\\addlinespace")
+    out <- c(out, lines[i])
+  }
+  out
+}

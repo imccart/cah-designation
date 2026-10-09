@@ -27,13 +27,13 @@ sens_outcomes <- c(
   "OB beds"                      = "beds_ob",
   "FTE RNs"                      = "ftern",
   "Inpatient days per bed"       = "ipdays",
-  "Closures"                     = "closures",
-  "Mergers"                      = "mergers",
-  "System membership"            = "system",
   "ED visits per bed"            = "edvisits",
   "Outpatient visits per bed"    = "opvisits",
   "Non-ED outpatient visits per bed" = "opvisits-noned",
-  "Births"                       = "births"
+  "Births"                       = "births",
+  "Closures"                     = "closures",
+  "Mergers"                      = "mergers",
+  "System membership"            = "system"
 )
 
 sens.cohort <- bind_rows(hosp.event.cohort, state.event.cohort)
@@ -67,14 +67,10 @@ pooled_recentered <- function(out, estr) {
        numPre = sum(e_grid < -1), numPost = sum(e_grid >= 0))
 }
 
-## The paper's own estimates and intervals (Table 2 and the visits table).
-table2 <- bind_rows(
-  results.table %>% transmute(outcome, SDID_est = sdid_att, SDID_lb = sdid_ci_low, SDID_ub = sdid_ci_high,
-                              CS_est = cs_att, CS_lb = cs_ci_low, CS_ub = cs_ci_high),
-  visit_res %>% filter(design == "state") %>%
-    transmute(outcome, SDID_est = sdid_att, SDID_lb = sdid_lo, SDID_ub = sdid_hi,
-              CS_est = cs_att, CS_lb = cs_lo, CS_ub = cs_hi)
-)
+## The paper's own estimates and intervals (Table 2).
+table2 <- results.table %>%
+  transmute(outcome, SDID_est = sdid_att, SDID_lb = sdid_ci_low, SDID_ub = sdid_ci_high,
+            CS_est = cs_att, CS_lb = cs_ci_low, CS_ub = cs_ci_high)
 
 ## The fixed-length confidence interval under the linear extension is symmetric
 ## about its estimator, so its midpoint is the trend-adjusted estimate.
@@ -137,6 +133,7 @@ fmt_est <- function(x, lo, hi) {
   sprintf("%s %s", formatC(x, format = "f", digits = dg), fmt_ci(lo, hi))
 }
 tab_lines <- c()
+tab_outcomes <- c()
 for (out in names(sens_outcomes)) {
   cells <- c()
   for (estr in c("SDID", "CS")) {
@@ -147,9 +144,9 @@ for (out in names(sens_outcomes)) {
   }
   if (all(cells == "")) next
   tab_lines <- c(tab_lines, sprintf("%s & %s \\\\", out, paste(cells, collapse = " & ")))
+  tab_outcomes <- c(tab_outcomes, out)
 }
-tab_lines <- append(tab_lines, "\\addlinespace", after = 6)
-tab_lines <- append(tab_lines, "\\addlinespace", after = 11)
+tab_lines <- with_group_breaks(tab_lines, tab_outcomes)
 writeLines(c(
   "\\begin{tabular}{lcccc}",
   "\\toprule",

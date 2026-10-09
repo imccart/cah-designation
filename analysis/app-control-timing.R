@@ -261,10 +261,10 @@ ct_forest_labels <- c(
   "Mergers"                      = "Mergers"
 )
 
-outcome_order <- c(
+outcome_order <- outcome.order[outcome.order %in% c(
   sapply(ct_hosp_outcomes, function(o) o$label),
   sapply(ct_state_outcomes, function(o) o$label)
-)
+)]
 
 label_levels <- ct_forest_labels[outcome_order]
 

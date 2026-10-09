@@ -204,16 +204,17 @@ for (ov in c("closures", "mergers")) {
 t1_total <- Sys.time()
 
 # Multi-panel histogram --------------------------------------------------------
+perm_levels <- outcome.order[outcome.order %in% perm.results$outcome]
 perm_plot_dat <- perm.distributions %>%
-  left_join(perm.results, by = "outcome") %>%
-  mutate(outcome = factor(outcome, levels = perm.results$outcome))
+  left_join(perm.results, by = "outcome", relationship = "many-to-one") %>%
+  mutate(outcome = factor(outcome, levels = perm_levels))
 
 p_perm <- ggplot(perm_plot_dat, aes(x = att_perm)) +
   geom_histogram(bins = 40, fill = "gray70", color = "gray40", linewidth = 0.2) +
   geom_vline(aes(xintercept = att_actual), color = "red", linewidth = 0.6,
              linetype = "dashed") +
   geom_text(data = perm.results %>%
-              mutate(outcome = factor(outcome, levels = perm.results$outcome)),
+              mutate(outcome = factor(outcome, levels = perm_levels)),
             aes(x = att_actual, y = Inf, label = sprintf("p = %.3f", p_value)),
             vjust = 1.5, hjust = "inward", color = "red", size = 2.8) +
   facet_wrap(~ outcome, ncol = 3, scales = "free") +

@@ -386,7 +386,7 @@ Ultimately, the distinction between preserving hospital presence and preserving 
 \centering
 \footnotesize
 \begin{minipage}[h]{6in}
-\caption[]{\textbf{Summary Statistics by CAH Designation}\footnote{Summary statistics for CAH and non-CAH hospitals, with CAHs further divided into years prior to designation, after designation, and all years. Numbers reflect means or counts, and brackets denote the 10th and 90th percentile ranges. Data are limited to general, acute care, community hospitals over the years 1995 through 2010. Distance reflects miles to the nearest neighboring hospital, as described in Section~\ref{sec:data}; bed size is from the AHA variable ``BDTOT''; OB beds and FTE RNs are from the AHA Annual Survey; rural status is based on an indicator for whether the hospital is located in a rural CBSA as per the AHA survey; inpatient days is from the AHA variable ``IPDTOT'' and measured per bed; ED, outpatient, and non-ED outpatient visits are from the AHA Annual Survey and measured per pre-period bed, and births are annual counts; closures and mergers are identified from the AHA summary of changes files; operating margin is net patient revenue less total operating expenses, divided by net patient revenue; current ratio is current assets divided by current liabilities; net fixed assets per bed is land, buildings, and equipment net of depreciation, in millions of 2010 dollars per pre-period bed; capital expenditures per bed is the annual change in gross fixed assets, in tens of thousands of 2010 dollars per pre-period bed; net patient revenue and operating expenses per bed are in thousands of 2010 dollars per pre-period bed; and system membership indicates whether the hospital belongs to a multi-hospital system. }}
+\caption[]{\textbf{Summary Statistics by CAH Designation}\footnote{Summary statistics for CAH and non-CAH hospitals, with CAHs further divided into years prior to designation, after designation, and all years. Numbers reflect means or counts, and brackets denote the 10th and 90th percentile ranges. Data are limited to general, acute care, community hospitals over the years 1995 through 2010. Variables are defined in Section~\ref{sec:data}, and rural status is an indicator for location in a rural CBSA from the AHA survey. All per-bed outcomes are measured per pre-period bed, and births are annual counts. Net fixed assets per bed is in millions of 2010 dollars, capital expenditures per bed in tens of thousands, and net patient revenue and operating expenses per bed in thousands.}}
 \centerline{%
     \input{../results/desc_compare.tex}
 }
@@ -555,11 +555,11 @@ Ultimately, the distinction between preserving hospital presence and preserving 
 \begin{minipage}[h]{6in}
 \caption[]{Pre/Post Trends: Organizational Changes\footnote{Mean outcome among treated hospitals (converters in the 1999--2001 cohorts) and control hospitals (hospitals in states that had not yet adopted or never adopted the program) by year relative to designation, computed within cohort and averaged across cohorts. Means are unweighted, before SDID reweighting. The vertical dashed line marks the last pre-designation year.}}
 \begin{tabular}{cc}
-\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-system.png} &
-\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-closures.png} \\
-\small (a) System Membership & \small (b) Closures \\
-\multicolumn{2}{c}{\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-mergers.png}} \\
-\multicolumn{2}{c}{\small (c) Mergers}
+\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-closures.png} &
+\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-mergers.png} \\
+\small (a) Closures & \small (b) Mergers \\
+\multicolumn{2}{c}{\includegraphics[height=4in,width=2.7in,keepaspectratio]{../results/diagnostics/diag-pretrend-system.png}} \\
+\multicolumn{2}{c}{\small (c) System Membership}
 \end{tabular}
 \label{fig:pretrend-org}
 \end{minipage}

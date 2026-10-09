@@ -120,11 +120,11 @@ write_tabular <- function(lines, header, path, align) {
 
 ## ===== E4 / R1.2 — Outpatient, ED visits, births ==============================
 ## The visit outcomes are estimated with the other outcomes in 2-hospital-dd.R
-## (state-timing) and 3-hospital-dd-alt.R (eligibility-restricted). This chunk
-## collects their rows into the last panel of results/att_overall_perm.tex and
-## into results/att_visits_elig.tex, and writes the visit series used elsewhere.
-## pre_mean is the treated pre-period mean, the base for the percent effects
-## quoted in the abstract and Section 4.4.
+## (state-timing) and 3-hospital-dd-alt.R (eligibility-restricted), and appear
+## in Table 2 and the appendix eligibility table with the other outcomes. This
+## chunk writes the visit estimates and series used elsewhere. pre_mean is the
+## treated pre-period mean, the base for the percent effects quoted in the
+## abstract and Section 4.4.
 visit_labels <- c("ED visits per bed", "Outpatient visits per bed",
                   "Non-ED outpatient visits per bed", "Births")
 visit_res <- bind_rows(
@@ -139,38 +139,6 @@ visit_series <- bind_rows(
   elig.event.series %>% filter(outcome %in% visit_labels) %>% mutate(design = "elig"))
 write_csv(visit_res, "results/diagnostics/visits-att.csv")
 write_csv(visit_series, "results/diagnostics/event-series-visits.csv")
-dsg_label <- c(state = "State-timing", elig = "Eligibility-restricted")
-## Main text carries the state-timing design; the eligibility-restricted design
-## goes to the appendix, matching how the other outcomes are presented.
-visit_line <- function(d) {
-  d %>% rowwise() %>%
-    mutate(line = sprintf("%s & %s & %s & %s & %s & %d \\\\", outcome,
-                          fmt3(sdid_att), ci3(sdid_lo, sdid_hi),
-                          ifelse(is.na(cs_att), "", fmt3(cs_att)),
-                          ifelse(is.na(cs_att), "", ci3(cs_lo, cs_hi)),
-                          sdid_ntr)) %>%
-    pull(line)
-}
-visit_header <- c(" & \\multicolumn{2}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
-                  "\\cmidrule(lr){2-3} \\cmidrule(lr){4-5}",
-                  "Outcome & ATT & 95\\% CI & ATT & 95\\% CI & $N_{tr}$ \\\\")
-## The state-timing visit rows, with permutation p-values, form the last panel of
-## Table 2 (written in the R1-minor(a) chunk below)
-visit_perm <- read_csv("results/diagnostics/permutation_pvalues.csv", show_col_types = FALSE) %>%
-  select(outcome, p_value)
-visit_perm_lines <- visit_res %>%
-  filter(design == "state") %>%
-  left_join(visit_perm, by = "outcome", relationship = "one-to-one") %>%
-  rowwise() %>%
-  mutate(line = sprintf("%s & %s & %s & %s & %s & %s & %d \\\\", outcome,
-                        fmt3(sdid_att), ci3(sdid_lo, sdid_hi),
-                        ifelse(is.na(p_value), "", sprintf("%.3f", p_value)),
-                        ifelse(is.na(cs_att), "", fmt3(cs_att)),
-                        ifelse(is.na(cs_att), "", ci3(cs_lo, cs_hi)),
-                        sdid_ntr)) %>%
-  pull(line)
-write_tabular(visit_line(visit_res %>% filter(design == "elig")),
-              visit_header, "results/att_visits_elig.tex", "lccccr")
 
 
 ## ===== R2.2 — Pre-designation restructuring, state-timing design ==============
@@ -181,9 +149,9 @@ antic_map <- c(margin = "Operating margin", current_ratio = "Current ratio", net
                capex = "Capital expenditures per bed", net_pat_rev = "Net patient revenue per bed",
                tot_operating_exp = "Operating expenses per bed",
                BDTOT = "Total beds", OBBD = "OB beds", FTERN = "FTE RNs", ip_per_bed = "Inpatient days per bed",
-               system = "System membership",
                ed_per_bed = "ED visits per bed", op_per_bed = "Outpatient visits per bed",
-               opnon_per_bed = "Non-ED outpatient visits per bed", BIRTHS = "Births")
+               opnon_per_bed = "Non-ED outpatient visits per bed", BIRTHS = "Births",
+               system = "System membership")
 antic_rows <- list()
 for (oname in names(antic_map)) {
   pp <- if (oname %in% fin.vars) financial.pre else 5
@@ -200,8 +168,7 @@ antic_lines <- antic_state %>%
                         fmt3(base_att), ci3(base_lo, base_hi),
                         fmt3(antic_att), ci3(antic_lo, antic_hi))) %>%
   pull(line)
-antic_lines <- append(antic_lines, "\\addlinespace", after = 6)
-antic_lines <- append(antic_lines, "\\addlinespace", after = 12)
+antic_lines <- with_group_breaks(antic_lines, antic_state$outcome)
 
 antic_header <- c(
   " & \\multicolumn{2}{c}{Treatment at designation} & \\multicolumn{2}{c}{Treatment one year earlier} \\\\",
@@ -507,7 +474,7 @@ write_csv(src_res, "results/diagnostics/source-comparison.csv")
 perm_file <- "results/diagnostics/permutation_pvalues.csv"
 if (file.exists(perm_file)) {
   perm <- read_csv(perm_file, show_col_types = FALSE) %>% select(outcome, p_value)
-  main_perm <- results.table %>% left_join(perm, by = "outcome")
+  main_perm <- results.table %>% left_join(perm, by = "outcome", relationship = "one-to-one")
   lines <- main_perm %>% rowwise() %>%
     mutate(line = sprintf("%s & %s & %s & %s & %s & %s & %d \\\\", outcome,
                           fmt3(sdid_att), ci3(sdid_ci_low, sdid_ci_high),
@@ -515,8 +482,7 @@ if (file.exists(perm_file)) {
                           ifelse(is.na(cs_att), "", fmt3(cs_att)),
                           ifelse(is.na(cs_att), "", ci3(cs_ci_low, cs_ci_high)),
                           sdid_ntr)) %>% pull(line)
-  lines <- append(lines, "\\addlinespace", after = 6); lines <- append(lines, "\\addlinespace", after = 11)
-  lines <- c(lines, "\\addlinespace", visit_perm_lines)
+  lines <- with_group_breaks(lines, main_perm$outcome)
   write_tabular(lines,
                 c(" & \\multicolumn{3}{c}{SDID} & \\multicolumn{2}{c}{Callaway--Sant'Anna} & \\\\",
                   "\\cmidrule(lr){2-4} \\cmidrule(lr){5-6}",

@@ -130,7 +130,8 @@ antic_table <- elig.results %>%
       transmute(outcome,
                 antic_att = sdid_att, antic_ci_low = sdid_ci_low, antic_ci_high = sdid_ci_high),
     by = "outcome"
-  )
+  ) %>%
+  arrange(match(outcome, outcome.order))
 
 tex_lines <- antic_table %>%
   rowwise() %>%
@@ -141,9 +142,7 @@ tex_lines <- antic_table %>%
   ungroup() %>%
   pull(line)
 
-# Group separators: financial (1-6), capacity (7-10), organizational (11)
-tex_lines <- append(tex_lines, "\\addlinespace", after = 6)
-tex_lines <- append(tex_lines, "\\addlinespace", after = 11)  # shifted by 1
+tex_lines <- with_group_breaks(tex_lines, antic_table$outcome)
 
 writeLines(c(
   "\\begin{tabular}[t]{lcccc}",

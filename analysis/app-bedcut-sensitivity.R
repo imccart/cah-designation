@@ -128,7 +128,7 @@ bc_forest_labels <- c(
   "Births"                       = "Births"
 )
 
-outcome_order <- sapply(bc_hosp_outcomes, function(o) o$label)
+outcome_order <- outcome.order[outcome.order %in% sapply(bc_hosp_outcomes, function(o) o$label)]
 label_levels  <- bc_forest_labels[outcome_order]
 
 # Baseline band data

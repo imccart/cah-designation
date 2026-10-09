@@ -22,6 +22,15 @@ est.dat   <- read_csv('data/output/estimation_data.csv', col_types = cols(ID = c
 state.dat <- read_csv('data/output/state_estimation_data.csv', show_col_types = FALSE)
 state.timing <- state.dat %>% distinct(MSTATE, state_treat_year) %>% deframe()   # adoption year by state, 0 = never
 fin.vars  <- c('margin', 'current_ratio', 'net_fixed', 'capex', 'net_pat_rev', 'tot_operating_exp')
+## Outcome order in every table and figure: financial, capacity and staffing,
+## visits and births, organizational
+outcome.order <- c("Operating margin", "Current ratio", "Net fixed assets",
+                   "Capital expenditures per bed", "Net patient revenue per bed",
+                   "Operating expenses per bed",
+                   "Total beds", "OB beds", "FTE RNs", "Inpatient days per bed",
+                   "ED visits per bed", "Outpatient visits per bed",
+                   "Non-ED outpatient visits per bed", "Births",
+                   "Closures", "Mergers", "System membership")
 
 
 # Global parameters --------------------------------------------------------
@@ -46,28 +55,8 @@ source('analysis/4-changes-state-dd.R')    # -> state.results.table
 
 
 # Combined results table (hospital + state) --------------------------------
-# Reorder: financial (1-6), capacity (7-10), organizational (closures, mergers, system)
 results.table <- bind_rows(hosp.results.table, state.results.table) %>%
-  mutate(.order = case_when(
-    outcome == "Operating margin"             ~ 1,
-    outcome == "Current ratio"                ~ 2,
-    outcome == "Net fixed assets"             ~ 3,
-    outcome == "Capital expenditures per bed" ~ 4,
-    outcome == "Net patient revenue per bed"  ~ 5,
-    outcome == "Operating expenses per bed"   ~ 6,
-    outcome == "Total beds"                   ~ 7,
-    outcome == "OB beds"                      ~ 8,
-    outcome == "FTE RNs"                      ~ 9,
-    outcome == "Inpatient days per bed"       ~ 10,
-    outcome == "Closures"                     ~ 11,
-    outcome == "Mergers"                      ~ 12,
-    outcome == "System membership"            ~ 13,
-    TRUE                                      ~ 99
-  )) %>%
-  arrange(.order) %>%
-  select(-.order) %>%
-  ## the visit outcomes have their own table (Table 3)
-  filter(is.na(group) | group == "main")
+  arrange(match(outcome, outcome.order))
 
 fmt <- function(x) {
   ax <- abs(x)
@@ -90,9 +79,7 @@ tex.lines.sdid <- results.table %>%
   ungroup() %>%
   pull(line)
 
-# Insert group separators: financial (1-6), capacity (7-10), organizational (11-13)
-tex.lines.sdid <- append(tex.lines.sdid, "\\addlinespace", after = 6)
-tex.lines.sdid <- append(tex.lines.sdid, "\\addlinespace", after = 11)  # shifted by 1
+tex.lines.sdid <- with_group_breaks(tex.lines.sdid, results.table$outcome)
 
 writeLines(c(
   "\\begin{tabular}[t]{lccr}",
@@ -112,9 +99,7 @@ tex.lines.cs <- results.table %>%
   ungroup() %>%
   pull(line)
 
-# Insert group separators: financial (1-6), capacity (7-10), organizational (11-13)
-tex.lines.cs <- append(tex.lines.cs, "\\addlinespace", after = 6)
-tex.lines.cs <- append(tex.lines.cs, "\\addlinespace", after = 11)  # shifted by 1
+tex.lines.cs <- with_group_breaks(tex.lines.cs, results.table$outcome)
 
 writeLines(c(
   "\\begin{tabular}{lcc}",
@@ -140,18 +125,18 @@ forest_labels <- c(
   "OB beds" = "OB beds",
   "FTE RNs" = "FTE RNs",
   "Inpatient days per bed" = "Inpatient days\nper bed",
-  "Closures" = "Closures",
-  "Mergers" = "Mergers",
-  "System membership" = "System\nmembership",
   "ED visits per bed" = "ED visits\nper bed",
   "Outpatient visits per bed" = "Outpatient visits\nper bed",
   "Non-ED outpatient visits per bed" = "Non-ED outpatient\nvisits per bed",
-  "Births" = "Births"
+  "Births" = "Births",
+  "Closures" = "Closures",
+  "Mergers" = "Mergers",
+  "System membership" = "System\nmembership"
 )
 
-## every outcome in both designs; the visit rows sit after the organizational ones
+## every outcome in both designs
 forest_dat <- bind_rows(
-  bind_rows(results.table, hosp.results.table %>% filter(group == "visits")) %>%
+  results.table %>%
     transmute(outcome, controls = "State-timing",
               att = sdid_att, ci_low = sdid_ci_low, ci_high = sdid_ci_high),
   elig.results %>%
