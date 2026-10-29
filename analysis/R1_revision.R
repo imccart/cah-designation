@@ -194,74 +194,127 @@ write_csv(bind_rows(conv_beds %>% filter(eff_year %in% 1999:2001) %>% mutate(coh
 
 
 ## ===== E2 / R2.1 — What predicts a state's adoption cohort ====================
-## State characteristics over 1990-96 (hospital market structure, closures,
-## margins, unemployment) by adoption cohort, with correlations with cohort
-## year among the 1999-2001 states. Writes results/att_adoption_timing.tex (+ CSV).
-laus <- read_csv("data/input/laus_state_unemployment_1990_2000.csv", show_col_types = FALSE) %>% rename(MSTATE = state)
-u_state <- bind_rows(
-  laus %>% filter(year >= 1994, year <= 1996) %>% group_by(MSTATE) %>% summarise(u_94_96 = mean(unemp_rate), .groups = "drop"),
-  laus %>% filter(year >= 1997, year <= 1998) %>% group_by(MSTATE) %>% summarise(u_97_98 = mean(unemp_rate), .groups = "drop")) %>%
-  group_by(MSTATE) %>% summarise(across(c(u_94_96, u_97_98), ~ first(na.omit(.x))), .groups = "drop") %>%
-  mutate(d_u_late = u_97_98 - u_94_96)
+## Two sets of state characteristics by adoption cohort, all measured over
+## 1996-98: HCRIS margins begin in 1996, and 1998 is the last year before any of
+## these states adopts. Levels are 1996 values and changes run 1996 to 1998.
+## Economic conditions (unemployment and per-capita income) are shown by year in
+## results/adoption-timing-econ.png and tested in a regression of adoption cohort on
+## their levels and changes, controlling for rurality and the number of small
+## hospitals (1996 features of a state's hospital market that the economic
+## changes cannot have caused). Hospital-market characteristics are summarized in
+## results/att_adoption_timing.tex (+ CSV) and tested in a regression of cohort
+## year on the 1996-98 closure rate and the margin level and change, controlling
+## for rurality and the number of small hospitals. Both regressions use the
+## 1999-2001 states.
+econ_state <- read_csv("data/input/state_econ_1990_2002.csv", show_col_types = FALSE) %>%
+  rename(MSTATE = state) %>%
+  filter(year %in% c(1996, 1998)) %>%
+  select(MSTATE, year, unemp_rate, pc_income) %>%
+  pivot_wider(names_from = year, values_from = c(unemp_rate, pc_income)) %>%
+  transmute(MSTATE, u_96 = unemp_rate_1996, d_u = unemp_rate_1998 - unemp_rate_1996,
+            inc_96 = pc_income_1996 / 1000, d_inc = 100 * (pc_income_1998 / pc_income_1996 - 1))
 st96 <- est.dat %>% filter(year == 1996) %>% group_by(MSTATE) %>%
   summarise(first_obs = first(state_treat_year), n_hosp = n_distinct(ID), n_small = sum(BDTOT <= 50, na.rm = TRUE),
             share_rural = mean(ever_rural, na.rm = TRUE), mean_beds = mean(BDTOT, na.rm = TRUE), mean_dist = mean(distance, na.rm = TRUE),
             share_gov = mean(own_gov, na.rm = TRUE), .groups = "drop")
-cl <- est.dat %>% filter(year >= 1990, year <= 1996) %>% group_by(MSTATE) %>%
+cl <- est.dat %>% filter(year >= 1996, year <= 1998) %>% group_by(MSTATE) %>%
   summarise(closure_rate = 100 * sum(closed) / n(), .groups = "drop")
-cl_change <- est.dat %>% mutate(period = case_when(year >= 1990 & year <= 1993 ~ "early", year >= 1994 & year <= 1996 ~ "late")) %>%
-  filter(!is.na(period)) %>% group_by(MSTATE, period) %>% summarise(rate = 100 * sum(closed) / n(), .groups = "drop") %>%
-  pivot_wider(names_from = period, values_from = rate) %>% mutate(d_closure = late - early) %>% select(MSTATE, d_closure)
-mg <- est.dat %>% filter(year >= 1994, year <= 1996) %>% group_by(MSTATE) %>% summarise(margin_94_96 = mean(margin, na.rm = TRUE), .groups = "drop")
-adopt <- st96 %>% left_join(cl, by = "MSTATE") %>% left_join(cl_change, by = "MSTATE") %>% left_join(mg, by = "MSTATE") %>% left_join(u_state, by = "MSTATE") %>%
+mg <- est.dat %>% filter(year %in% c(1996, 1998)) %>% group_by(MSTATE, year) %>%
+  summarise(margin = mean(margin, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(names_from = year, values_from = margin, names_prefix = "m_") %>%
+  transmute(MSTATE, margin_96 = m_1996, d_margin = m_1998 - m_1996)
+adopt <- st96 %>%
+  left_join(cl, by = "MSTATE", relationship = "one-to-one") %>%
+  left_join(mg, by = "MSTATE", relationship = "one-to-one") %>%
+  left_join(econ_state, by = "MSTATE", relationship = "one-to-one") %>%
   mutate(cohort = case_when(first_obs == 0 ~ "Never", first_obs < 1999 ~ "Before 1999", first_obs > 2001 ~ "After 2001", TRUE ~ as.character(first_obs)))
 write_csv(adopt, "results/diagnostics/adoption-timing-states.csv")
+
+## State economic conditions by calendar year and adoption cohort: unweighted
+## state means of two series that designation cannot affect, for the treated
+## cohorts (1999-2001) in black and all other states in gray.
+econ_dat <- read_csv("data/input/state_econ_1990_2002.csv", show_col_types = FALSE) %>%
+  rename(MSTATE = state) %>%
+  inner_join(adopt %>% select(MSTATE, first_obs), by = "MSTATE", relationship = "many-to-one") %>%
+  mutate(group = if_else(first_obs %in% 1999:2001, as.character(first_obs), "Other states"),
+         pc_income = pc_income / 1000) %>%
+  pivot_longer(c(unemp_rate, pc_income), names_to = "series", values_to = "value") %>%
+  group_by(series, group, year) %>%
+  summarise(value = mean(value), n_states = n(), .groups = "drop") %>%
+  mutate(series = factor(series, levels = c("unemp_rate", "pc_income"),
+                         labels = c("Unemployment rate (%)", "Per-capita income ($000s)")))
+write_csv(econ_dat, "results/diagnostics/adoption-timing-econ.csv")
+p_econ <- ggplot(econ_dat, aes(year, value, linetype = group, shape = group, color = group)) +
+  geom_line(linewidth = 0.5) +
+  geom_point(size = 1.2) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted", "solid")) +
+  scale_shape_manual(values = c(16, 17, 15, 16)) +
+  scale_color_manual(values = c("black", "black", "black", "gray65")) +
+  facet_wrap(~ series, ncol = 2, scales = "free_y") +
+  scale_x_continuous(breaks = seq(1990, 2002, 2)) +
+  labs(x = NULL, y = NULL, linetype = "Adoption cohort", shape = "Adoption cohort", color = "Adoption cohort") +
+  theme_bw(base_size = 10) +
+  theme(strip.background = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = "bottom", legend.key.width = unit(1.6, "lines"))
+ggsave("results/adoption-timing-econ.png", p_econ, width = 7, height = 3.4, dpi = 300)
 ## State counts quoted in the abstract and Section 3.3: adopting states, states
-## with a designation by 1995, and states whose program began in 1999-2002.
+## with a designation by 1995, states whose program began in 1999-2002, and the
+## 2002 adopters.
 write_csv(adopt %>% summarise(n_states = n(),
                               n_adopting = sum(first_obs > 0),
                               n_by_1995 = sum(first_obs > 0 & first_obs <= 1995),
-                              n_1999_2002 = sum(first_obs >= 1999 & first_obs <= 2002)),
+                              n_1999_2002 = sum(first_obs >= 1999 & first_obs <= 2002),
+                              n_2002 = sum(first_obs == 2002)),
           "results/diagnostics/adoption-timing-summary.csv")
 adopt_vars <- c(share_rural = "Share of hospitals rural", n_small = "Hospitals with 50 or fewer beds", mean_beds = "Mean beds", share_gov = "Share government-owned",
-                mean_dist = "Miles to nearest hospital", closure_rate = "Closures per 100 hospital-years, 1990-96", d_closure = "Change in closure rate, 1990-93 to 1994-96",
-                margin_94_96 = "Operating margin, 1994-96", u_94_96 = "Unemployment rate, 1994-96", d_u_late = "Change in unemployment, 1994-96 to 1997-98")
-cohort_order <- c("Before 1999", "1999", "2000", "2001", "After 2001", "Never")
+                mean_dist = "Miles to nearest hospital", closure_rate = "Closures per 100 hospital-years, 1996-98",
+                margin_96 = "Operating margin", u_96 = "Unemployment rate", inc_96 = "Per-capita income (\\$000s)",
+                d_margin = "Operating margin", d_u = "Unemployment rate (points)", d_inc = "Per-capita income (percent)")
+level_vars  <- c("share_rural", "n_small", "mean_beds", "share_gov", "mean_dist", "closure_rate", "margin_96", "u_96", "inc_96")
+change_vars <- c("d_margin", "d_u", "d_inc")
+cohort_order <- c("1999", "2000", "2001", "Never")
 means <- adopt %>% group_by(cohort) %>% summarise(n_states = n(), across(all_of(names(adopt_vars)), ~ mean(.x, na.rm = TRUE)), .groups = "drop") %>%
   mutate(cohort = factor(cohort, levels = cohort_order)) %>% arrange(cohort)
 core <- adopt %>% filter(first_obs %in% 1999:2001)
-corrs <- core %>%
-  summarise(across(all_of(names(adopt_vars)), ~ cor(.x, first_obs, use = "complete.obs"))) %>%
-  pivot_longer(everything(), names_to = "variable", values_to = "corr")
-## Joint regression of cohort year on closures and unemployment (levels and
-## changes) with rurality and the number of small hospitals, 1999-2001 states.
-adopt_ols <- lm(first_obs ~ closure_rate + d_closure + u_94_96 + d_u_late + share_rural + n_small, data = core)
-write_csv(tidy(adopt_ols) %>% mutate(n_states = nobs(adopt_ols), r_squared = summary(adopt_ols)$r.squared),
-          "results/diagnostics/adoption-timing-ols.csv")
-## One row per state characteristic, one column per adoption cohort. Counts and
-## bed/distance means print to one decimal, shares and rates to three.
+adopt_econ_ols <- lm(first_obs ~ u_96 + d_u + inc_96 + d_inc + share_rural + n_small, data = core)
+write_csv(tidy(adopt_econ_ols) %>% mutate(n_states = nobs(adopt_econ_ols), r_squared = summary(adopt_econ_ols)$r.squared),
+          "results/diagnostics/adoption-timing-ols-econ.csv")
+adopt_market_ols <- lm(first_obs ~ closure_rate + margin_96 + d_margin + share_rural + n_small, data = core)
+write_csv(tidy(adopt_market_ols) %>% mutate(n_states = nobs(adopt_market_ols), r_squared = summary(adopt_market_ols)$r.squared),
+          "results/diagnostics/adoption-timing-ols-market.csv")
+## The same two regressions with an indicator for early adoption (1999, against
+## 2000-2001) as the outcome, a linear probability model.
+core <- core %>% mutate(early = as.integer(first_obs == 1999))
+adopt_econ_lpm <- lm(early ~ u_96 + d_u + inc_96 + d_inc + share_rural + n_small, data = core)
+write_csv(tidy(adopt_econ_lpm, conf.int = TRUE) %>% mutate(n_states = nobs(adopt_econ_lpm), r_squared = summary(adopt_econ_lpm)$r.squared),
+          "results/diagnostics/adoption-timing-lpm-econ.csv")
+adopt_market_lpm <- lm(early ~ closure_rate + margin_96 + d_margin + share_rural + n_small, data = core)
+write_csv(tidy(adopt_market_lpm, conf.int = TRUE) %>% mutate(n_states = nobs(adopt_market_lpm), r_squared = summary(adopt_market_lpm)$r.squared),
+          "results/diagnostics/adoption-timing-lpm-market.csv")
+## One row per state characteristic, one column per adoption cohort, levels in
+## 1996 above changes from 1996 to 1998, with state counts in the bottom row.
+## Counts, bed and distance means, and income print to one decimal, the
+## unemployment rate to two, shares and rates to three.
 cell <- function(v, k) {
   x <- means %>% filter(cohort == k) %>% pull(v)
   if (length(x) == 0 || is.na(x)) return("")
-  fmt <- if (v %in% c("n_small", "mean_beds", "mean_dist")) "%.1f" else "%.3f"
+  fmt <- if (v %in% c("n_small", "mean_beds", "mean_dist", "inc_96", "d_inc")) "%.1f" else if (v %in% c("u_96", "d_u")) "%.2f" else "%.3f"
   sprintf(fmt, x)
 }
-
-lines <- names(adopt_vars) %>%
-  map_chr(function(v) {
-    vals <- cohort_order %>% map_chr(~ cell(v, .x))
-    corr <- corrs %>% filter(variable == v) %>% pull(corr)
-    sprintf("%s & %s & %s \\\\", adopt_vars[[v]], paste(vals, collapse = " & "), sprintf("%.2f", corr))
-  })
-
+row_line <- function(v) sprintf("%s & %s \\\\", adopt_vars[[v]], paste(map_chr(cohort_order, ~ cell(v, .x)), collapse = " & "))
 n_states <- cohort_order %>% map_chr(function(k) {
   x <- means %>% filter(cohort == k) %>% pull(n_states)
   if (length(x) == 0) "0" else as.character(x)
 })
-n_line <- sprintf("States & %s & \\\\", paste(n_states, collapse = " & "))
-write_tabular(c(n_line, "\\addlinespace", lines),
-              c(" & \\multicolumn{6}{c}{Adoption cohort} & Correlation with \\\\", "State characteristic, 1990--1996 & Before 1999 & 1999 & 2000 & 2001 & After 2001 & Never & cohort year, 1999--2001 \\\\"),
-              "results/att_adoption_timing.tex", "lcccccc c")
+write_tabular(c("\\multicolumn{5}{l}{\\textit{Levels, 1996}} \\\\",
+                map_chr(level_vars, row_line),
+                "\\addlinespace",
+                "\\multicolumn{5}{l}{\\textit{Changes, 1996 to 1998}} \\\\",
+                map_chr(change_vars, row_line),
+                "\\midrule",
+                sprintf("States & %s \\\\", paste(n_states, collapse = " & "))),
+              c(" & \\multicolumn{4}{c}{Adoption cohort} \\\\", "\\cmidrule(lr){2-5}", "State characteristic & 1999 & 2000 & 2001 & Never \\\\"),
+              "results/att_adoption_timing.tex", "lcccc")
 
 
 ## ===== E3 / R1.1 / R2.4 / R3.3 — Inframarginal converters, break-even, bed-size split =====
